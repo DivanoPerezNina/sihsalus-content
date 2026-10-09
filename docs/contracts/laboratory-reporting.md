@@ -122,6 +122,29 @@ La NTS exige conservar Hb observada y ajustada cuando corresponde ajuste por
 altitud (§5.3.2–5.3.3, p. 22). Este cambio no sobrescribe el valor observado
 ni implementa una conversión automática.
 
+## Captura prenatal OBST-013: revisión del 8 de octubre de 2026
+
+Las etiquetas de clasificación de anemia en `OBST-013-TAMIZAJE PRENATAL`
+no deben aplicar los puntos de corte del primer/tercer trimestre a toda gestación.
+La [RM 429-2024/MINSA, tabla 13, PDF p. 9](https://cdn.www.gob.pe/uploads/document/file/6498138/5670414-rm-429-2024.pdf#page=9)
+distingue el segundo trimestre: normal desde 10,5 g/dL, leve 9,5–10,4,
+moderada 7,0–9,4 y severa por debajo de 7,0. La interpretación también necesita
+el contexto aplicable de altitud y la hemoglobina ajustada cuando corresponde.
+
+La corrección de captura elimina los intervalos universales de las opciones y
+explicita que se registra una clasificación confirmada según trimestre y
+altitud. Conserva nombre, versión `1.0.0`, UUIDs, respuestas codificadas,
+hemoglobina medida, validaciones y observaciones históricas. Initializer
+actualiza el esquema por su mecanismo AMPATH habitual; no hay SQL ni recarga
+forzada. No se añade una clasificación calculada ni se deduce trimestre de los
+campos independientes de tamizaje VIH o sífilis.
+
+Esto corrige una indicación engañosa; no acredita cumplimiento de NTS 213.
+La captura del contexto clínico y la interpretación derivada requieren el
+contrato del componente backend responsable. La revisión funcional debe probar
+la apertura de un encuentro histórico, su clasificación conservada y el
+registro/recarga de una clasificación confirmada en QLTY antes de desplegar.
+
 ## Selección de poblaciones desde 1.25.25
 
 Desde `1.25.26`, todas las bandas de edad de hemoglobina usan semanas, meses o
