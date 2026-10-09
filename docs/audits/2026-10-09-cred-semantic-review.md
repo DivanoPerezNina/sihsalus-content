@@ -38,28 +38,35 @@ conteo de sobres y su configuración: el valor heredado de 360 es una meta de
 entregas, no una pauta clínica completa. No se añade cálculo de dosis ni se
 reinterpreta un registro histórico.
 
-## Ambigüedades verificadas que requieren otro cambio
+## Semántica y reutilización verificadas
 
 El export canónico incluido `10_SIHSALUS_sihsalus_concepts_2026-09-09-1.zip`
 identifica `f0000007-0000-4000-8000-000000000007` como **Puntaje SIH.SALUS**,
 `f0000002-0000-4000-8000-000000000002` como **Notas clínicas SIH.SALUS** y
 `f0000003-0000-4000-8000-000000000003` como **Plan de manejo SIH.SALUS**.
-Las siguientes capturas no tienen un `obsGroup` que preserve su rol:
+El motor `@sihsalus/esm-form-engine-lib` 4.1.0 conserva la identidad de cada campo
+mediante `formFieldNamespace: rfe-forms` y `formFieldPath: rfe-forms-${field.id}`:
+`constructObs` y `editObs` los escriben; `findObsByFormField` prioriza la identidad
+y el concepto al reabrir. Compartir un concepto sin `obsGroup` no demuestra por
+sí mismo pérdida de la distinción. La lectura del encuentro pide ambos campos.
 
 | Formulario | Captura comprobada | Pendiente |
 | --- | --- | --- |
-| CRED-013 | `dosisUi` usa el concepto Puntaje para dosis de vitamina A; `lote` y `observaciones` usan ambos Notas clínicas dentro de la misma sección. | Reutilizar una dosis canónica con unidad UI y diferenciar lote/observaciones mediante conceptos o agrupación soportada. La etiqueta no corrige la semántica persistida. |
-| CRED-014 | `pielFaneras`, `cabezaCuello`, `ojosOidosNarizGarganta`, `toraxCardiorespiratorio`, `abdomen`, `genitourinario`, `osteomuscular`, `neurologico` y `hallazgosRelevantes` usan el mismo concepto Notas clínicas, como obs independientes. | Demostrar guardado/reapertura sin confundir regiones y definir captura canónica que conserve su procedencia. |
-| CRED-022 | `temasTratados`, `acuerdosFamilia`, `practicasPriorizadas` y `fechaProximoControl` usan el mismo concepto Plan de manejo, como obs independientes dentro de la misma sección. | Diferenciar los roles y confirmar qué debe ser fecha estructurada y qué debe seguir como texto histórico. |
+| CRED-013 | `dosisUi` usa el concepto Puntaje para dosis de vitamina A. | Buscar una dosis canónica con unidad UI y definir la transición compatible. La identidad del campo no convierte un puntaje en una dosis. `lote` y `observaciones` comparten Notas clínicas con IDs distintos: su repetición no basta para exigir conceptos nuevos. |
+| CRED-014 | `pielFaneras`, `cabezaCuello`, `ojosOidosNarizGarganta`, `toraxCardiorespiratorio`, `abdomen`, `genitourinario`, `osteomuscular`, `neurologico` y `hallazgosRelevantes` usan Notas clínicas con IDs distintos. | Reutilización compatible con la identidad nativa de campos. Conservar los UUID; comprobar la persistencia y reapertura en el backend desplegado, sin inferir un defecto por repetición del concepto. |
+| CRED-022 | `temasTratados`, `acuerdosFamilia`, `practicasPriorizadas` y `fechaProximoControl` usan Plan de manejo con IDs distintos. | Reutilización compatible con la identidad nativa de campos. El próximo control sigue siendo texto de indicación, no fecha estructurada. No requiere una migración sólo por compartir concepto. |
 | CRED-011 | PHQ-9/AUDIT-C del cuidador y PSC/PPSC del niño comparten instrumento, puntaje y resultado en la atención del paciente CRED. No existe un campo estructurado que identifique al sujeto evaluado; observaciones sólo pide quién respondió para PSC/PPSC. | Definir el sujeto clínico y su relación con el niño; reutilizar la relación madre/niño canónica y persistir el resultado en el sujeto correcto. No deducir que el cuidador es la madre ni que el puntaje pertenece al niño por el encounter. |
 | Frontend MMN | Suma histórica de entregas contra una meta fija configurable, sin inicio/fin de pauta ni consumo registrado. | El componente backend responsable y el profesional deben definir el esquema por edad, inicio tardío, prevención/tratamiento y seguimiento antes de presentar cumplimiento clínico. |
 
-La repetición de conceptos demuestra pérdida de distinción estructural; no se
-afirma que se haya observado corrupción de datos reales. La respuesta del motor
-al guardar y reabrir debe comprobarse con datos sintéticos. Estos hallazgos no se
-resuelven cambiando un UUID de forma unilateral, renombrando conceptos generales
-o reinterpretando observaciones históricas. Requieren equivalencias en OCL,
-contrato del backend, compatibilidad de actualización y aprobación clínica.
+Pasaron las seis regresiones existentes `obs-field-identity.test.ts` y
+`obs-select-adapter.test.ts`: creación con identidad, reapertura, edición sin
+anular un campo distinto que comparte concepto y fallback para registros
+históricos sin identidad. Es evidencia sintética del motor local, no del backend
+desplegado. Los registros históricos sin `formFieldPath` conservan el fallback
+por concepto; no se han revisado datos reales ni se afirma corrupción histórica.
+La dosis de vitamina A y el sujeto evaluado en CRED-011 requieren revisión
+terminológica/clínica; no se resuelven renombrando conceptos generales ni
+reinterpretando observaciones históricas.
 
 Siguen pendientes la Hb ajustada trazable, la periodicidad completa de tamizaje,
 la transición antropométrica de 60/61 meses y la edad/flujo de aplicación de
