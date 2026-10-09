@@ -38,6 +38,12 @@ conteo de sobres y su configuración: el valor heredado de 360 es una meta de
 entregas, no una pauta clínica completa. No se añade cálculo de dosis ni se
 reinterpreta un registro histórico.
 
+La tarjeta MMN también reutiliza `useOpenmrsFetchAll` del framework para contar
+todas las páginas de obs antes de mostrar el acumulado. Conserva la fórmula de
+progreso y la meta configurada; una página posterior fallida muestra el error
+existente, no un total parcial o cero. Cambiar de paciente descarta el conteo
+previo mientras carga el nuevo. No se añade un paginador propio.
+
 ## Semántica y reutilización verificadas
 
 El export canónico incluido `10_SIHSALUS_sihsalus_concepts_2026-09-09-1.zip`
@@ -89,7 +95,9 @@ el contenido es idéntico. Sobre el cambio se ejecutaron:
 
 La regresión del frontend usa entregas sintéticas de 180 y 360 sobres en español
 e inglés: conserva 50/100 %, muestra la cantidad original y no presenta 100 %
-como suplementación completa. Pasaron 12 pruebas entre esta regresión y el
-catálogo UI, además de TypeScript y Biome de los cinco archivos modificados.
+como suplementación completa. Pasaron 17 pruebas entre esta regresión, la
+paginación y el catálogo UI, además de TypeScript y Biome de los archivos
+modificados. Incluyen espera de la segunda página, fallo posterior y recuperación,
+cambio de paciente y ausencia de progreso parcial/cero ante error en ambos idiomas.
 El build y la verificación general del frontend se reportan por separado sobre
 su commit final. La aceptación clínica y la persistencia en QLTY siguen pendientes.
