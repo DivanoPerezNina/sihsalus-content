@@ -34,6 +34,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Evolución mediante el loader nativo de formularios; la guarda existente de
   Initializer incluye el nuevo esquema y la conservación de las versiones anteriores.
 
+### Tamizaje prenatal
+
+- OBST-013 retira los puntos de corte universales de las etiquetas de anemia.
+  La clasificación confirmada requiere el trimestre y el contexto de altitud.
+  Conserva identidad del formulario, conceptos, respuestas, mediciones y datos
+  históricos; no calcula una clasificación ni modifica las reglas de laboratorio.
+
 ### Suscripción OCL institucional
 
 - Prepara `openconceptlab.subscriptionUrl` para la release curada
