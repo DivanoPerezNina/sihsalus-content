@@ -62,6 +62,28 @@ class AmpathFormIdentityTest(unittest.TestCase):
         status, output = self.run_validator()
         self.assertEqual(0, status, output)
 
+    def test_accepts_native_markdown_control_without_an_observation_concept(self):
+        self.write_form("hint.json", pages=[{"sections": [{"questions": [{
+            "id": "hint", "type": "control", "questionOptions": {"rendering": "markdown"},
+            "value": "Synthetic guidance without clinical capture.",
+        }]}]}])
+        status, output = self.run_validator()
+        self.assertEqual(0, status, output)
+
+    def test_markdown_support_preserves_missing_concept_and_unknown_renderer_checks(self):
+        for field_type, rendering, expected in (
+            ("obs", "markdown", "missing questionOptions.concept"),
+            ("control", "invented-renderer", "unsupported rendering"),
+        ):
+            with self.subTest(field_type=field_type, rendering=rendering):
+                self.write_form("hint.json", pages=[{"sections": [{"questions": [{
+                    "id": "hint", "type": field_type,
+                    "questionOptions": {"rendering": rendering}, "value": "Synthetic hint.",
+                }]}]}])
+                status, output = self.run_validator()
+                self.assertEqual(1, status, output)
+                self.assertIn(expected, output)
+
     def test_rejects_ambiguous_or_invalid_literal_options(self):
         for answers in (
             [{"value": "Gradual", "concept": "synthetic-concept", "label": "Inicio gradual"}],
@@ -206,6 +228,39 @@ class ImmediatePuerperiumResponsibilityTest(unittest.TestCase):
 
     def test_layout_change_has_a_new_native_form_identity(self):
         self.assertEqual("OBST-006-PUERPERIO INMEDIATO", self.form["name"])
+        self.assertEqual("1.0.2", self.form["version"])
+        self.assertNotEqual(
+            validator.ampath_persisted_form_uuid(self.form["name"], "1.0.1"),
+            validator.ampath_persisted_form_uuid(self.form["name"], self.form["version"]))
+
+
+class ObstetricDischargeSubjectTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.form = json.loads(Path(
+            "configuration/ampathforms/HOSP-010-EPICRISIS OBSTÉTRICO-POSTPARTO.json").read_text())
+        cls.fields = {q["id"]: q for q in validator.walk(cls.form) if q.get("id")}
+
+    def test_maternal_discharge_does_not_capture_newborn_observations(self):
+        for field_id in ("recienNacidoGroup", "genero", "pesoKg", "puntajeApgar",
+                         "observaciones", "condicionDeAlta", "internoObstetriciaServicioNeonatologia"):
+            self.assertNotIn(field_id, self.fields)
+        observation_concepts = {q.get("questionOptions", {}).get("concept")
+                                for q in self.fields.values() if q.get("type") in ("obs", "obsGroup")}
+        self.assertNotIn("5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", observation_concepts)
+        self.assertNotIn("51cb21ae-ee65-45d5-b712-2953ed1af85c", observation_concepts)
+        hint = self.fields["orientacionHistoriaRecienNacido"]
+        self.assertEqual("control", hint["type"])
+        self.assertEqual({"rendering": "markdown"}, hint["questionOptions"])
+        self.assertEqual(
+            "Registre la evaluación y medidas del recién nacido en su propia historia clínica, "
+            "desde **Hijos vinculados**.", hint["value"])
+        self.assertIn("diagnosticosFinalesDeEgreso", self.fields)
+        self.assertIn("indicacionesALaAlta", self.fields)
+
+    def test_subject_correction_has_a_new_native_form_identity(self):
+        self.assertEqual("HOSP-010-EPICRISIS OBSTÉTRICO-POSTPARTO", self.form["name"])
+        self.assertEqual("1e8e1c31-2bd0-47a8-92b8-15c547b8df5c", self.form["uuid"])
         self.assertEqual("1.0.2", self.form["version"])
         self.assertNotEqual(
             validator.ampath_persisted_form_uuid(self.form["name"], "1.0.1"),

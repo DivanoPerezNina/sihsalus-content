@@ -173,6 +173,40 @@ migran proveedores, roles, ubicaciones ni observaciones. La comprobación UI
 pendiente debe verificar una página Responsable, un único proveedor y guardado
 y lectura nativos con el mismo proveedor, rol y ubicación.
 
+## Sujeto de la epicrisis obstétrica
+
+`HOSP-010-EPICRISIS OBSTÉTRICO-POSTPARTO` `1.0.2` conserva la epicrisis de la
+madre y retira de la captura nueva el grupo **Recién Nacido**: género, peso,
+Apgar, observaciones, condición de alta y responsable de neonatología. Todos
+eran observaciones del RN dentro del encuentro materno. El grupo no cambia el
+sujeto del encuentro; su peso reutilizaba `5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`,
+el concepto general de peso, y podía atribuir una medida del niño a la madre.
+
+Un control Markdown nativo, sin concepto ni observación, orienta a registrar la
+evaluación y medidas en la historia propia del recién nacido desde **Hijos
+vinculados**. El profesional elige al hijo correcto mediante el vínculo nativo;
+el formulario no infiere un niño, duplica datos ni cambia el paciente activo.
+El motor del frontend registra `markdown`, transforma su tipo a `control` y
+renderiza `value`; el validador del paquete reconoce ahora ese renderer nativo
+sin valor clínico. Conserva el rechazo de observaciones sin concepto y
+renderers no soportados.
+El esquema `1.0.1` y sus encuentros se conservan mediante el loader versionado
+y la guarda de historia de Initializer. No se trasladan ni corrigen datos
+históricos; cualquier revisión de atribución previa requiere un procedimiento
+clínico separado.
+
+La revisión acotada de `HOSP-007` y `OBST-005` encontró grupos Neonato que
+registran el equipo/responsable de atención del parto, no peso ni Apgar del RN.
+Esos campos de resumen requieren su propia revisión clínica y no se eliminan
+por equivalencia con la biometría. El `pesoMadreKg` de `OBST-005` permanece como
+medida materna. `HOSP-011` no contiene un grupo de biometría de recién nacido.
+No se introducen filtros en lectores para ocultar observaciones mal atribuidas.
+
+La aceptación pendiente debe comprobar que el nuevo formulario no ofrece
+captura de RN en el encuentro materno, que muestra la orientación y que guarda
+y lee la epicrisis materna. Registrar medidas del RN exige su propia historia,
+visita y encuentro; probar únicamente con pacientes sintéticos propios.
+
 ## Alcance clínico documentado
 
 El inventario siguiente orienta la revisión de formularios para categoría II-1 /

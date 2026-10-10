@@ -10,8 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### Antecedentes obstétricos — candidata `1.25.31`
+### Captura materna — candidata `1.25.31`
 
+- HOSP-010 `1.0.2` retira del encuentro materno los seis campos del grupo
+  Recién Nacido y orienta a registrarlos en la historia propia del niño desde
+  Hijos vinculados. Evita atribuir peso y otras observaciones del RN a la madre;
+  conserva el esquema histórico sin trasladar ni reinterpretar datos previos.
 - OBST-006 `1.0.2` reúne responsable, ubicación y rol en una página. Conserva el
   proveedor que gobierna el envío y retira solo el segundo control duplicado de
   proveedor del nuevo esquema; el esquema anterior y sus encuentros permanecen.

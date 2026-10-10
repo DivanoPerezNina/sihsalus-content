@@ -333,86 +333,13 @@
               ]
             },
             {
-              "type": "obsGroup",
+              "id": "orientacionHistoriaRecienNacido",
+              "label": "Historia del recién nacido",
+              "type": "control",
               "questionOptions": {
-                "rendering": "group",
-                "concept": "47de215b-ed3d-5f3f-8856-07bfdd4035c0"
+                "rendering": "markdown"
               },
-              "id": "recienNacidoGroup",
-              "label": "Recién Nacido",
-              "questions": [
-                {
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "select",
-                    "concept": "b30ad531-71dc-402f-8ac4-2238d1ee58c2",
-                    "answers": [
-                      {
-                        "concept": "4e751a15-d872-445f-8b9a-c19e208a4fce",
-                        "label": "Varón"
-                      },
-                      {
-                        "concept": "fb682be9-e459-4f74-b38b-ce36bdc0dd1e",
-                        "label": "Mujer"
-                      }
-                    ]
-                  },
-                  "id": "genero",
-                  "label": "Género"
-                },
-                {
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "number",
-                    "min": "0",
-                    "concept": "5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-                  },
-                  "id": "pesoKg",
-                  "label": "Peso (Kg)"
-                },
-                {
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "number",
-                    "min": "0",
-                    "concept": "51cb21ae-ee65-45d5-b712-2953ed1af85c",
-                    "max": "10"
-                  },
-                  "id": "puntajeApgar",
-                  "label": "Puntaje Apgar"
-                },
-                {
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "text",
-                    "min": "0",
-                    "concept": "f947a4ad-3d8d-4516-8e6b-67b3dca4e227",
-                    "max": "10"
-                  },
-                  "id": "observaciones",
-                  "label": "Observaciones"
-                },
-                {
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "text",
-                    "min": "0",
-                    "concept": "2282d464-bd57-453f-9aef-2d5f7f006069",
-                    "max": "10"
-                  },
-                  "id": "condicionDeAlta",
-                  "label": "Condición de Alta"
-                },
-                {
-                  "type": "obs",
-                  "questionOptions": {
-                    "rendering": "text",
-                    "concept": "199b49db-3dd5-5484-b99a-d162107db205"
-                  },
-                  "id": "internoObstetriciaServicioNeonatologia",
-                  "label": "Interno de Obstetricia/Servicio de Neonatología"
-                }
-              ]
+              "value": "Registre la evaluación y medidas del recién nacido en su propia historia clínica, desde **Hijos vinculados**."
             },
             {
               "type": "obsGroup",
@@ -498,5 +425,5 @@
   "referencedForms": [],
   "uuid": "1e8e1c31-2bd0-47a8-92b8-15c547b8df5c",
   "description": "Resumen de la evolución y tratamiento de un paciente durante su estancia en un centro de salud. En este caso, se trata de una epicrisis obstétrica, que recopila información sobre la atención brindada a una paciente durante el embarazo, parto o postparto.",
-  "version": "1.0.1"
+  "version": "1.0.2"
 }
