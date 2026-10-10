@@ -207,6 +207,40 @@ captura de RN en el encuentro materno, que muestra la orientación y que guarda
 y lee la epicrisis materna. Registrar medidas del RN exige su propia historia,
 visita y encuentro; probar únicamente con pacientes sintéticos propios.
 
+## Sujeto del tamizaje de salud mental CRED
+
+`CRED-011-SALUD MENTAL NIÑO Y CUIDADOR` `1.3.1` conserva el nombre y UUID
+JSON para continuar su historia versionada; la captura nueva corresponde al
+niño del encuentro. Retira las opciones PHQ-9 y AUDIT-C, que el propio esquema
+anterior indicaba aplicar al cuidador, y la detección de violencia en la
+madre/cuidadora con su campo `resultadoViolencia`. Estas observaciones se
+guardaban bajo el paciente activo, sin un sujeto adulto independiente.
+
+Un control Markdown nativo orienta a registrar los instrumentos y resultados
+del cuidador en su propia historia clínica. La ayuda de instrumento y
+observaciones deja de solicitar resultados del adulto. No selecciona ni abre
+una historia automáticamente, no copia puntajes y no infiere quién es el
+cuidador.
+
+PPSC/PSC-17 conserva su opción, conceptos, rango de puntaje, resultados y edad
+del niño. El plan sigue siendo obligatorio para resultados positivos o sospecha
+diagnóstica. El cálculo y la visibilidad dejan de referenciar el campo de
+violencia retirado; el puntaje sigue obligatorio para la opción infantil
+restante. Esta corrección de sujeto no valida la selección clínica de PPSC o
+PSC-17, no añade reglas de edad ni sustituye sus instrumentos oficiales.
+
+El loader nativo conserva el esquema `1.3.0` y sus encuentros; el ensayo de
+Initializer incluye ahora CRED-011 en la guarda de identidad, esquema y retiro
+de versiones anteriores. No migra ni reatribuye resultados históricos del
+cuidador. Su revisión requiere un procedimiento clínico separado. Las pruebas
+de expresiones cubren resultado vacío, negativo, positivo y sospecha sin
+referencias a campos retirados y sin dejar un plan obligatorio oculto.
+
+La aceptación visual debe comprobar la única opción infantil y la orientación,
+sin captura de violencia del cuidador. La publicación continúa por el mismo
+paquete candidato y workflow descritos arriba; esta modificación de fuente no
+acredita publicación, carga efectiva ni aceptación clínica.
+
 ## Alcance clínico documentado
 
 El inventario siguiente orienta la revisión de formularios para categoría II-1 /

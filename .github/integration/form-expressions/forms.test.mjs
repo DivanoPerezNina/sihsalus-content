@@ -15,6 +15,7 @@ function fields(filename) {
 const anemia = fields('CRED-001-TAMIZAJE DE ANEMIA.json');
 const obstetrics = fields('OBST-002-EMBARAZO ACTUAL.json');
 const history = fields('OBST-001-ANTECEDENTES.json');
+const mentalHealth = fields('CRED-011-SALUD MENTAL NIÑO Y CUIDADOR.json');
 const evaluate = (expression, values) => vm.runInNewContext(expression, { dayjs, ...values });
 const date = (value) => dayjs(value).toDate();
 
@@ -88,5 +89,25 @@ test('a prior preterm birth can retain its route, outcomes and weight without te
       assert.equal(hidden, false, `${id}: term births ${partos}`);
       assert.equal(field.required, false, `${id}: absence of a count is not zero`);
     }
+  }
+});
+
+test('child mental-health results and required plans work without a caregiver violence field', () => {
+  const instrument = mentalHealth.instrumentoTamizaje.questionOptions.answers[0].concept;
+  const isEmpty = (value) => value == null || value === '';
+  for (const [result, risk, required, hidden] of [
+    [undefined, undefined, false, true],
+    ['f1000000-0000-4000-8000-000000000191', 0, false, true],
+    ['f1000000-0000-4000-8000-000000000192', 1, true, false],
+    ['f1000000-0000-4000-8000-000000000193', 2, true, false],
+  ]) {
+    // No deleted field is supplied: an obsolete reference must fail evaluation.
+    const values = { instrumentoTamizaje: instrument, resultadoTamizaje: result, isEmpty };
+    assert.equal(evaluate(mentalHealth.nivelRiesgoCalculado.questionOptions.calculate.calculateExpression, values), risk);
+    assert.equal(evaluate(mentalHealth.plan.required, values), required);
+    assert.equal(evaluate(mentalHealth.plan.hide.hideWhenExpression, values), hidden);
+    assert.equal(mentalHealth.puntajeTamizaje.required, true);
+    assert.equal(mentalHealth.puntajeTamizaje.hide?.hideWhenExpression
+      ? evaluate(mentalHealth.puntajeTamizaje.hide.hideWhenExpression, values) : false, false);
   }
 });

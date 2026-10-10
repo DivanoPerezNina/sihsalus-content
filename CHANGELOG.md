@@ -10,7 +10,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### Captura materna — candidata `1.25.31`
+### Captura CRED y materna — candidata `1.25.31`
+
+- CRED-011 `1.3.1` retira PHQ-9, AUDIT-C y detección/resultados de violencia
+  de la madre o cuidador del encuentro del niño. Conserva PPSC/PSC-17 y orienta
+  a registrar los instrumentos del adulto en su propia historia clínica. No
+  cambia edades, rangos, conceptos infantiles ni observaciones históricas.
 
 - HOSP-010 `1.0.2` retira del encuentro materno los seis campos del grupo
   Recién Nacido y orienta a registrarlos en la historia propia del niño desde

@@ -267,5 +267,56 @@ class ObstetricDischargeSubjectTest(unittest.TestCase):
             validator.ampath_persisted_form_uuid(self.form["name"], self.form["version"]))
 
 
+class ChildMentalHealthSubjectTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.form = json.loads(Path(
+            "configuration/ampathforms/CRED-011-SALUD MENTAL NIÑO Y CUIDADOR.json").read_text())
+        cls.fields = {q["id"]: q for q in validator.walk(cls.form) if q.get("id")}
+
+    def test_child_encounter_does_not_capture_caregiver_instruments_or_violence(self):
+        self.assertEqual([{
+            "concept": "0fbdaaef-29df-49a5-a3a4-7a48e40a1bb4",
+            "label": "PPSC o PSC-17 (especificar versión)",
+        }], self.fields["instrumentoTamizaje"]["questionOptions"]["answers"])
+        self.assertNotIn("resultadoViolencia", self.fields)
+        hint = self.fields["orientacionHistoriaCuidador"]
+        self.assertEqual("control", hint["type"])
+        self.assertEqual({"rendering": "markdown"}, hint["questionOptions"])
+        self.assertEqual(
+            "Registre los instrumentos y resultados del cuidador en su propia historia clínica.",
+            hint["value"])
+        for field_id in ("instrumentoTamizaje", "observaciones"):
+            info = self.fields[field_id]["questionInfo"]
+            self.assertIn("niño", info)
+            self.assertNotIn("PHQ-9", info)
+            self.assertNotIn("AUDIT", info)
+
+    def test_child_instrument_retains_existing_score_age_result_and_legacy_contracts(self):
+        for field_id, minimum, maximum in (("edadMeses", "0", "143"),
+                                          ("puntajeTamizaje", "0", "100")):
+            field = self.fields[field_id]
+            self.assertEqual((minimum, maximum),
+                             (field["questionOptions"]["min"], field["questionOptions"]["max"]))
+            self.assertIs(field["required"], True)
+        self.assertIs(self.fields["observaciones"]["required"], True)
+        self.assertEqual([
+            "f1000000-0000-4000-8000-000000000191",
+            "f1000000-0000-4000-8000-000000000192",
+            "f1000000-0000-4000-8000-000000000193",
+        ], [a["concept"] for a in self.fields["resultadoTamizaje"]["questionOptions"]["answers"]])
+        self.assertIs(self.fields["resultadoSaludMentalLegado"]["readonly"], True)
+        self.assertEqual("f0000013-0000-4000-8000-000000000013",
+                         self.fields["resultadoSaludMentalLegado"]["questionOptions"]["concept"])
+
+    def test_subject_correction_uses_a_new_identity_under_the_same_form_name(self):
+        self.assertEqual("CRED-011-SALUD MENTAL NIÑO Y CUIDADOR", self.form["name"])
+        self.assertEqual("c1110000-0000-4000-8000-000000000011", self.form["uuid"])
+        self.assertEqual("1.3.1", self.form["version"])
+        self.assertNotEqual(
+            validator.ampath_persisted_form_uuid(self.form["name"], "1.3.0"),
+            validator.ampath_persisted_form_uuid(self.form["name"], self.form["version"]))
+
+
 if __name__ == "__main__":
     unittest.main()
