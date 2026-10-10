@@ -7,7 +7,7 @@ The local unit tests are not evidence that the containers or migration passed.
 
 Fresh installation and both upgrade scenarios also check the reviewed clinical
 form schemas (CRED, maternal care, anamnesis, the general outpatient form,
-the dedicated examination, retired outpatient SOAP and obstetric history) and eighteen laboratory range criteria against the candidate
+the dedicated examination, retired outpatient SOAP, obstetric history and immediate puerperium) and eighteen laboratory range criteria against the candidate
 files. Publication and retirement flags must match the declarations. Upgrades preserve the UUID, database identity, version and schema hash of
 previous forms; a restart must leave the resulting forms unchanged. These are
 loader checks, not clinical encounter save/edit tests.

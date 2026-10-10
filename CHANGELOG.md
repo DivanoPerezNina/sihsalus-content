@@ -12,6 +12,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Antecedentes obstétricos — candidata `1.25.31`
 
+- OBST-006 `1.0.2` reúne responsable, ubicación y rol en una página. Conserva el
+  proveedor que gobierna el envío y retira solo el segundo control duplicado de
+  proveedor del nuevo esquema; el esquema anterior y sus encuentros permanecen.
 - OBST-001 `1.0.1` permite declarar «Ninguna» en antecedentes familiares y
   personales con la respuesta canónica existente; impide combinarla con enfermedades.
 - La vía de parto, nacidos vivos/muertos y peso del RN se capturan de forma

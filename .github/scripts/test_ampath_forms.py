@@ -182,5 +182,35 @@ class ObstetricHistoryCaptureTest(unittest.TestCase):
                          {q["questionOptions"]["concept"] for q in self.fields.values()})
 
 
+class ImmediatePuerperiumResponsibilityTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.form = json.loads(Path(
+            "configuration/ampathforms/OBST-006-PUERPERIO INMEDIATO.json").read_text())
+
+    def test_native_responsibility_fields_share_one_page_without_changing_provider_precedence(self):
+        pages = [page for page in self.form["pages"] if page["label"] == "Responsable"]
+        self.assertEqual(1, len(pages))
+        fields = [q for q in validator.walk(pages[0]) if q.get("id")]
+        # The native processor uses the first field of each encounter-context type.
+        # Keep the governing provider ID. The former second provider was not an
+        # observation and rehydrated from the same encounter provider metadata.
+        self.assertEqual([
+            ("resposable", "encounterProvider", None),
+            ("lugarAtencion", "encounterLocation", True),
+            ("rolDelResponsable", "encounterRole", True),
+        ], [(q["id"], q["type"], q.get("required")) for q in fields])
+        for field in fields:
+            self.assertEqual({"rendering": "ui-select-extended", "isSearchable": True},
+                             field["questionOptions"])
+
+    def test_layout_change_has_a_new_native_form_identity(self):
+        self.assertEqual("OBST-006-PUERPERIO INMEDIATO", self.form["name"])
+        self.assertEqual("1.0.2", self.form["version"])
+        self.assertNotEqual(
+            validator.ampath_persisted_form_uuid(self.form["name"], "1.0.1"),
+            validator.ampath_persisted_form_uuid(self.form["name"], self.form["version"]))
+
+
 if __name__ == "__main__":
     unittest.main()

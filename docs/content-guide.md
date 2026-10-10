@@ -157,6 +157,22 @@ La publicación del paquete candidato `1.25.31` sigue el workflow existente de
 esa guía, después de sus comprobaciones y revisión; no requiere una migración
 SQL ni un script de recarga del formulario.
 
+## Responsable de puerperio inmediato
+
+`OBST-006-PUERPERIO INMEDIATO` `1.0.2` concentra proveedor, ubicación y rol en
+una página **Responsable**. Conserva el primer proveedor (`resposable`), que
+gobierna el envío nativo, junto con `lugarAtencion` y `rolDelResponsable`.
+Retira del nuevo esquema el segundo control `responsableAtencion`: ambos eran
+metadata del mismo encuentro, sin concepto ni observación independiente, y se
+rehidrataban del mismo proveedor guardado. No se renombra el ID histórico
+`resposable` ni se modifica la captura clínica de puerperio.
+
+La versión anterior `1.0.1` conserva su esquema y encuentros mediante el mismo
+loader y las comprobaciones de historia de Initializer descritas arriba. No se
+migran proveedores, roles, ubicaciones ni observaciones. La comprobación UI
+pendiente debe verificar una página Responsable, un único proveedor y guardado
+y lectura nativos con el mismo proveedor, rol y ubicación.
+
 ## Alcance clínico documentado
 
 El inventario siguiente orienta la revisión de formularios para categoría II-1 /
