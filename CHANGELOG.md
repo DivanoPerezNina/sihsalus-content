@@ -10,6 +10,18 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Antecedentes obstétricos — candidata `1.25.31`
+
+- OBST-001 `1.0.1` permite declarar «Ninguna» en antecedentes familiares y
+  personales con la respuesta canónica existente; impide combinarla con enfermedades.
+- La vía de parto, nacidos vivos/muertos y peso del RN se capturan de forma
+  independiente del contador de partos a término. Conserva conceptos, límites y
+  campos opcionales; no redefine paridad ni total de partos. La semántica histórica
+  del concepto `8795c05b-f286-4d70-a1e6-69172e676f05` sigue pendiente de revisión
+  clínica y terminológica.
+- Evolución mediante el loader nativo de formularios; la guarda existente de
+  Initializer incluye el nuevo esquema y la conservación de las versiones anteriores.
+
 ### Suscripción OCL institucional
 
 - Prepara `openconceptlab.subscriptionUrl` para la release curada

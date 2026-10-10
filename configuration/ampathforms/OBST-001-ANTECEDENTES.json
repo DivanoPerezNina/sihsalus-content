@@ -27,6 +27,10 @@
                     "concept": "6a8fd860-e741-4880-aeef-14ad23c4a05e",
                     "answers": [
                       {
+                        "concept": "dbb7efe1-12d9-58b0-8de2-c218f626ff48",
+                        "label": "Ninguna"
+                      },
+                      {
                         "concept": "ddb167d7-890c-4580-aea4-44503c71e8f3",
                         "label": "Alergias"
                       },
@@ -76,7 +80,13 @@
                       }
                     ]
                   },
-                  "validators": []
+                  "validators": [
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "arrayContains(myValue, 'dbb7efe1-12d9-58b0-8de2-c218f626ff48') && myValue.length > 1",
+                      "message": "No seleccione Ninguna junto con otros antecedentes."
+                    }
+                  ]
                 }
               ],
               "required": true
@@ -110,6 +120,10 @@
                     "rendering": "checkbox",
                     "concept": "68cf307b-bfb1-4f7a-8079-bb057b234dab",
                     "answers": [
+                      {
+                        "concept": "dbb7efe1-12d9-58b0-8de2-c218f626ff48",
+                        "label": "Ninguna"
+                      },
                       {
                         "concept": "de885a20-8101-49ab-bc2a-dc21de42b0d0",
                         "label": "Aborto habitual/recurrente"
@@ -220,7 +234,13 @@
                       }
                     ]
                   },
-                  "validators": []
+                  "validators": [
+                    {
+                      "type": "js_expression",
+                      "failsWhenExpression": "arrayContains(myValue, 'dbb7efe1-12d9-58b0-8de2-c218f626ff48') && myValue.length > 1",
+                      "message": "No seleccione Ninguna junto con otros antecedentes."
+                    }
+                  ]
                 }
               ],
               "required": true
@@ -309,9 +329,6 @@
                     "step": 1,
                     "disallowDecimals": true
                   },
-                  "hide": {
-                    "hideWhenExpression": "isEmpty(partos) || partos <= '0'"
-                  },
                   "validators": []
                 },
                 {
@@ -326,9 +343,6 @@
                     "min": "0",
                     "max": "20",
                     "concept": "78b32019-9881-4f5a-9c85-c9f954e53f9f"
-                  },
-                  "hide": {
-                    "hideWhenExpression": "isEmpty(partos) || partos <= '0'"
                   }
                 },
                 {
@@ -344,9 +358,6 @@
                     "step": 1,
                     "disallowDecimals": true
                   },
-                  "hide": {
-                    "hideWhenExpression": "isEmpty(partos) || partos <= '0'"
-                  },
                   "validators": []
                 },
                 {
@@ -361,9 +372,6 @@
                     "concept": "4dc3ee54-ba0c-49e7-b907-02aa727372f4",
                     "step": 1,
                     "disallowDecimals": true
-                  },
-                  "hide": {
-                    "hideWhenExpression": "isEmpty(partos) || partos <= '0'"
                   },
                   "validators": []
                 },
@@ -435,9 +443,6 @@
                     "disallowDecimals": true
                   },
                   "hideSteppers": true,
-                  "hide": {
-                    "hideWhenExpression": "isEmpty(partos) || partos <= '0'"
-                  },
                   "validators": []
                 }
               ]
@@ -756,5 +761,5 @@
   "referencedForms": [],
   "uuid": "af89b9db-8d2c-4151-a233-369cac81fcd6",
   "description": "Registrar antecedentes familiares, personales, obstétricos y vacunas previas",
-  "version": "1.0.0"
+  "version": "1.0.1"
 }

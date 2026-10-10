@@ -14,6 +14,7 @@ function fields(filename) {
 
 const anemia = fields('CRED-001-TAMIZAJE DE ANEMIA.json');
 const obstetrics = fields('OBST-002-EMBARAZO ACTUAL.json');
+const history = fields('OBST-001-ANTECEDENTES.json');
 const evaluate = (expression, values) => vm.runInNewContext(expression, { dayjs, ...values });
 const date = (value) => dayjs(value).toDate();
 
@@ -52,5 +53,40 @@ test('a past expected delivery date remains recordable; dates before FUM are rej
       isDateBefore: (left, right) => dayjs(left).isBefore(right),
     }));
     assert.equal(fails, expected);
+  }
+});
+
+test('obstetric history allows an explicit absence without combining it with a disease', () => {
+  const none = 'dbb7efe1-12d9-58b0-8de2-c218f626ff48';
+  for (const id of ['antecedentesFamiliares', 'antecedentesPersonales']) {
+    const field = history[id];
+    assert.equal(field.required, true, `${id}: unanswered is not an explicit absence`);
+    assert.ok(field.questionOptions.answers.some((answer) => answer.concept === none), id);
+    const conditions = field.questionOptions.answers.filter((answer) => answer.concept !== none);
+    const validator = field.validators.find((entry) => entry.type === 'js_expression');
+    assert.ok(validator, `${id}: contradictory answers need validation`);
+    for (const [myValue, expected] of [
+      [undefined, false], [[], false], [[none], false],
+      [[conditions[0].concept], false], [[conditions[0].concept, conditions[1].concept], false],
+      [[none, conditions[0].concept], true], [[conditions[0].concept, none], true],
+    ]) {
+      assert.equal(evaluate(validator.failsWhenExpression, {
+        myValue,
+        arrayContains: (array, member) => Array.isArray(array) && array.includes(member),
+      }), expected, `${id}: ${JSON.stringify(myValue)}`);
+    }
+  }
+});
+
+test('a prior preterm birth can retain its route, outcomes and weight without term births', () => {
+  for (const partos of [undefined, null, 0, 1]) {
+    for (const id of ['vaginales', 'cesaReas', 'nacidosVivos', 'nacidosMuertos', 'rnDeMayorPesoG']) {
+      const field = history[id];
+      const hidden = field.hide?.hideWhenExpression
+        ? evaluate(field.hide.hideWhenExpression, { gestaciones: 1, partos, isEmpty: (value) => value == null })
+        : false;
+      assert.equal(hidden, false, `${id}: term births ${partos}`);
+      assert.equal(field.required, false, `${id}: absence of a count is not zero`);
+    }
   }
 });

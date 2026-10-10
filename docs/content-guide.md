@@ -114,6 +114,49 @@ registros guardados llevan a la madre en `personA` y al hijo en `personB`. La
 configuración frontend `motherChildRelationshipTypeUuid` también debe coincidir
 para que el flujo de parto y la sala materna compartan el mismo vínculo.
 
+## Antecedentes obstétricos
+
+`OBST-001-ANTECEDENTES` `1.0.1` permite declarar explícitamente **Ninguna** en
+antecedentes familiares y personales. Reutiliza el concepto activo `sihsalus:521`
+(`dbb7efe1-12d9-58b0-8de2-c218f626ff48`), ya asociado como respuesta a ambas
+preguntas en el catálogo. El validador declarativo del motor impide combinarlo
+con enfermedades. Ambos antecedentes siguen siendo obligatorios; no se
+preselecciona una respuesta ni se interpreta un campo vacío como ausencia.
+
+Vaginales, cesáreas, nacidos vivos, nacidos muertos y peso del RN pueden
+registrarse aunque el contador de partos esté vacío o sea cero. Conservan sus
+conceptos, límites y carácter opcional. Esto permite registrar un parto
+pretérmino sin exigir un parto a término previo.
+
+La corrección no resuelve la ambigüedad del concepto `sihsalus:915`
+(`8795c05b-f286-4d70-a1e6-69172e676f05`): su nombre preferido en español indica
+partos a término, mientras otras denominaciones y mapeos remiten a paridad.
+Se conserva la etiqueta **Partos** y no se sustituye por `sihsalus:818`, cuya
+definición tampoco acredita un contador equivalente. La
+[revisión clínica documentada](audits/2026-09-23-forms-clinical-review.md)
+requiere decisión del responsable clínico y de terminología antes de redefinir
+estos conceptos, añadir un contador o reinterpretar observaciones históricas.
+
+La nueva versión usa `AmpathFormsLoader` de Initializer; no sobrescribe el
+esquema histórico `1.0.0` ni migra sus encuentros u observaciones. La integración
+existente de [Initializer](../.github/integration/admission-initializer/README.md)
+incluye el formulario y verifica la identidad y el esquema de las versiones
+anteriores en actualización y reinicio. Su ejecución en CI sigue siendo
+necesaria; las pruebas locales no acreditan carga efectiva ni aceptación clínica.
+
+Para comprobar el esquema local, ejecutar `python3 .github/scripts/test_ampath_forms.py`,
+`python3 .github/scripts/validate_ampath_forms.py` y
+`npm test --prefix .github/integration/form-expressions` tras instalar las
+dependencias propias según la [guía de desarrollo](development.md).
+Para inspección visual, el Form Builder nativo del frontend ofrece
+`/openmrs/spa/form-builder/new`: importar este JSON y usar **Render changes** y
+**Preview**. La vista previa usa el motor real sin guardar respuestas clínicas;
+comprobar Ninguna sola, Ninguna con enfermedad y los cinco campos con Partos
+vacío o cero. Importar y previsualizar no publica el formulario en el backend.
+La publicación del paquete candidato `1.25.31` sigue el workflow existente de
+esa guía, después de sus comprobaciones y revisión; no requiere una migración
+SQL ni un script de recarga del formulario.
+
 ## Alcance clínico documentado
 
 El inventario siguiente orienta la revisión de formularios para categoría II-1 /

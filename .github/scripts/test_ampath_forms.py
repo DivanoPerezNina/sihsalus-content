@@ -130,5 +130,57 @@ class AmpathFormIdentityTest(unittest.TestCase):
                     self.assertIn(f"{field} must be a non-empty string", output)
 
 
+class ObstetricHistoryCaptureTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.form = json.loads(Path(
+            "configuration/ampathforms/OBST-001-ANTECEDENTES.json").read_text())
+        cls.fields = {q["id"]: q for q in validator.walk(cls.form)
+                      if q.get("type") == "obs"}
+        cls.bundle, errors = validator.load_ocl_bundle()
+        if errors:
+            raise AssertionError(errors)
+
+    def test_absence_is_an_active_canonical_answer_for_both_required_histories(self):
+        none = "dbb7efe1-12d9-58b0-8de2-c218f626ff48"
+        concepts = self.bundle["active_by_external_id"][none]
+        self.assertEqual(1, len(concepts))
+        self.assertEqual(("sihsalus", "521", "N/A"),
+                         tuple(concepts[0][key] for key in ("source", "code", "datatype")))
+        for field_id, code in (("antecedentesFamiliares", "9"), ("antecedentesPersonales", "29")):
+            with self.subTest(field=field_id):
+                question = self.fields[field_id]
+                self.assertIs(question["required"], True)
+                options = question["questionOptions"]
+                self.assertEqual("checkbox", options["rendering"])
+                self.assertEqual(1, sum(a.get("concept") == none for a in options["answers"]))
+                self.assertIn(("sihsalus", "521"),
+                              self.bundle["q_and_a_targets"][("sihsalus", code)])
+                for node in (question, options):
+                    self.assertNotIn("defaultValue", node)
+                    self.assertNotIn("calculate", node)
+
+    def test_capture_change_versions_the_form_without_reinterpreting_obstetric_concepts(self):
+        self.assertEqual("OBST-001-ANTECEDENTES", self.form["name"])
+        self.assertEqual("af89b9db-8d2c-4151-a233-369cac81fcd6", self.form["uuid"])
+        self.assertEqual("1.0.1", self.form["version"])
+        self.assertNotEqual(
+            validator.ampath_persisted_form_uuid(self.form["name"], "1.0.0"),
+            validator.ampath_persisted_form_uuid(self.form["name"], self.form["version"]))
+        for field, concept in {
+            "partos": "8795c05b-f286-4d70-a1e6-69172e676f05",
+            "vaginales": "985732d6-157e-49aa-9d28-556696c5c4fe",
+            "cesaReas": "78b32019-9881-4f5a-9c85-c9f954e53f9f",
+            "nacidosVivos": "b553ce85-94e2-4755-b106-3befef127133",
+            "nacidosMuertos": "4dc3ee54-ba0c-49e7-b907-02aa727372f4",
+            "rnDeMayorPesoG": "dee42f1a-657e-4ab3-8a0a-b012500edea6",
+        }.items():
+            with self.subTest(field=field):
+                self.assertEqual(concept, self.fields[field]["questionOptions"]["concept"])
+        self.assertEqual("Partos", self.fields["partos"]["label"])
+        self.assertNotIn("8f2db1d3-4212-47e3-99aa-3cfa65ac1312",
+                         {q["questionOptions"]["concept"] for q in self.fields.values()})
+
+
 if __name__ == "__main__":
     unittest.main()
