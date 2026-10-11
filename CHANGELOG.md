@@ -10,6 +10,15 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Publicación nativa — candidata `1.25.32`
+
+- Fija Maven 3.9.16 mediante el Wrapper oficial y rechaza Maven 3.10 o posterior
+  en el perfil de publicación. Evita que Central Publishing 0.10.0 incluya
+  metadata del repositorio local y que Central rechace el bundle por falta de POM.
+- Añade una regresión del bundle real sin subida, conservando la firma y los
+  controles de validación/publicación efectivos del workflow. No cambia la
+  metadata distribuida ni la versión del paquete.
+
 ### Sitios anatómicos de procedimientos — candidata `1.25.32`
 
 - Añade un conjunto de 133 sitios anatómicos humanos basado en los códigos

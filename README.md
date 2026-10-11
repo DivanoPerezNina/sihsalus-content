@@ -31,7 +31,7 @@ Antes de editar, leer [AGENTS.md](AGENTS.md) y el
 Para construir el paquete y comprobar sus propiedades:
 
 ```sh
-mvn clean verify --batch-mode --file pom.xml
+./mvnw clean verify --batch-mode --file pom.xml
 ```
 
 El ZIP se genera en `target/sihsalus-content-<version>.zip`. Este comando no ejecuta

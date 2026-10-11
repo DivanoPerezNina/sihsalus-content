@@ -10,8 +10,10 @@ leer [AGENTS.md](../AGENTS.md) y el [contrato correspondiente](README.md#contrat
 - Node 24 y npm para ejecutar las expresiones JavaScript de formularios con la
   misma biblioteca de fechas del motor. Esta prueba usa el runner nativo de Node;
   los validadores Python no ejecutan JavaScript.
-- Maven 3 y Java: CI usa Java 8 para el paquete, Java 17 para autorización de
-  rangos y Java 21 para MariaDB/Liquibase.
+- Maven Wrapper fija Maven 3.9.16 para el paquete y su publicación; descarga la
+  distribución oficial y comprueba su SHA-256.
+- Java: CI usa Java 8 para el paquete, Java 17 para autorización de rangos y
+  Java 21 para MariaDB/Liquibase.
 - MariaDB y el backend de OpenMRS solo se necesitan en sus ensayos de integración;
   cada ensayo documenta su infraestructura y aislamiento.
 
@@ -42,7 +44,7 @@ necesitan mutar metadata. No requieren servidores del hospital.
 Para comprobar las propiedades del paquete y generar el ZIP:
 
 ```sh
-mvn clean verify --batch-mode --file pom.xml
+./mvnw clean verify --batch-mode --file pom.xml
 ```
 
 Maven no ejecuta las pruebas Python, Bash ni las integraciones de esta guía.
@@ -113,12 +115,40 @@ host. El proyecto exclusivo del runner se elimina con sus volúmenes al terminar
 no usa datos ni servidores del hospital. El clasificador conserva el rechazo de
 errores de carga aun cuando el endpoint HTTP responda correctamente.
 
+### Compatibilidad de la herramienta de publicación
+
+Usar `./mvnw` para construir y publicar el paquete. Central Publishing 0.10.0
+utiliza el instalador de artefactos heredado: con Maven 3.10 incorpora
+`maven-metadata-local.xml` y `_remote.repositories` al bundle, que Central rechaza
+porque no son artefactos publicables. El Wrapper oficial fija Maven 3.9.16;
+Maven Enforcer rechaza Maven 3.10 o posterior en el perfil `release`, antes de
+firmar o subir archivos. No se modifica el ZIP ni se desactivan los bloqueos del
+repositorio local.
+
+Es una restricción de compatibilidad de la herramienta, bajo responsabilidad de
+los mantenedores de publicación del content. El
+[diagnóstico upstream de Maven Resolver #2017](https://github.com/apache/maven-resolver/issues/2017)
+identifica el uso de la API heredada por Central Publishing; actualizar solamente
+a Central Publishing 0.11.0 conserva ese código. Retirar esta restricción cuando
+el plugin soporte el instalador de Maven 3.10 y la regresión del bundle pase con
+esa versión, antes de cambiar el Wrapper.
+
+```sh
+bash .github/scripts/test_maven_central_publication.sh --bundle
+```
+
+Esta regresión usa el perfil real contra un destino loopback cerrado, credenciales
+sintéticas temporales y firma desactivada solo para la prueba. Comprueba el POM,
+ZIP y sus checksums, y rechaza archivos de metadata del repositorio. No sube a
+Central ni acredita firma o publicación reales. `skipPublishing=true` no sirve
+para esta comprobación en 0.10.0: también omite el staging de los artefactos.
+
 El perfil `release` usa `autoPublish=true` y `waitUntil=validated`: Maven espera
 la subida y validación de Sonatype; los errores de cualquiera de ellas bloquean
 el workflow. La publicación continúa automáticamente y el paso obligatorio
 `Verify Maven Central publication` espera la disponibilidad pública del POM y ZIP.
 Así se evita depender de la confirmación final del Portal antes de comprobar los
-archivos que consumirá el backend. Un `mvn -P release deploy` exitoso por sí solo
+archivos que consumirá el backend. Un `./mvnw -P release deploy` exitoso por sí solo
 no acredita que ambos archivos ya puedan descargarse; fuera de CI se debe ejecutar
 también `.github/scripts/wait_for_maven_central.sh <version>`.
 

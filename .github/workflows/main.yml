@@ -118,11 +118,11 @@ jobs:
       - name: Test SIHSALUS validation log classifier
         run: bash .github/scripts/test_classify_validation_log.sh
       - name: Test Maven Central publication gate
-        run: bash .github/scripts/test_maven_central_publication.sh
+        run: bash .github/scripts/test_maven_central_publication.sh --bundle
       - name: Build with Maven
         id: build_with_maven
         run: |
-          mvn clean verify --batch-mode --file pom.xml
+          ./mvnw clean verify --batch-mode --file pom.xml
 
   publish:
     needs: [build, admission-migration, admission-initializer, reference-range-access]
@@ -138,7 +138,7 @@ jobs:
       - name: Check Maven Central version
         id: central-version
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --file pom.xml)
+          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout --file pom.xml)
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           URL="https://repo1.maven.org/maven2/io/github/proyecto-santaclotilde/sihsalus-content/${VERSION}/sihsalus-content-${VERSION}.pom"
           for attempt in $(seq 1 6); do
@@ -167,7 +167,7 @@ jobs:
 
       - name: Deploy to Maven Central
         if: steps.central-version.outputs.exists == 'false'
-        run: mvn -B -P release deploy --file pom.xml
+        run: ./mvnw -B -P release deploy --file pom.xml
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
           CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
