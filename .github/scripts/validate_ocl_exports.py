@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import sys
+import unicodedata
 import zipfile
 import xml.etree.ElementTree as ET
 from collections import defaultdict
@@ -81,7 +82,7 @@ NEIGHBORHOOD_PRESENTATION_METADATA = {
 REFERRAL_SOURCE = "referencia-institucional"
 REFERRAL_VERSION = "2026-08-25-01"
 PROCEDURE_ANATOMY_SOURCE = "anatomia-procedimientos"
-PROCEDURE_ANATOMY_VERSION = "2026-10-11-01"
+PROCEDURE_ANATOMY_VERSION = "2026-10-11-02"
 PROCEDURE_ANATOMY_SET_CODE = "PROCEDURE-BODY-SITES"
 PROCEDURE_ANATOMY_SET_UUID = "25b4e8e6-0781-5c04-bc76-888402f3f505"
 PROCEDURE_ANATOMY_HL7_URL = "http://terminology.hl7.org/CodeSystem/v2-0550"
@@ -94,7 +95,7 @@ PROCEDURE_ANATOMY_MAPPINGS_EXPORT = OCL_DIR / (
     f"67_SIHSALUS_{PROCEDURE_ANATOMY_SOURCE}_mappings_{PROCEDURE_ANATOMY_VERSION}.zip"
 )
 EXPECTED_PROCEDURE_ANATOMY_CANONICAL_SHA256 = (
-    "beca354daa202a249fb1b08140cfd2d0fe1b2e6bb18f3fdb780080e8f646962a"
+    "26dd43fb00dc098741742a7cbfe86f247b42aa229390d5ed4f7a687b74d928a7"
 )
 # Historical identities are assertions, not a second operational catalog.
 PROCEDURE_ANATOMY_HISTORICAL = {
@@ -553,8 +554,15 @@ def normalize_concept_name(name):
     return " ".join(str(name or "").strip().casefold().split())
 
 
-def validate_default_name_collision_safety(concept_records, errors):
+def validate_default_name_collision_safety(concept_records, errors, required_spanish_uuids=None):
     default_names = defaultdict(list)
+
+    def name_key(name):
+        text = normalize_concept_name(name)
+        if required_spanish_uuids is not None:
+            text = unicodedata.normalize("NFD", text)
+            text = "".join(char for char in text if not unicodedata.combining(char))
+        return text
 
     for zip_path, source_id, concept in concept_records:
         if concept.get("retired"):
@@ -562,6 +570,8 @@ def validate_default_name_collision_safety(concept_records, errors):
 
         active_names = [name for name in concept.get("names", []) if not name.get("retired")]
         for name in active_names:
+            if required_spanish_uuids is not None and name.get("locale") != "es":
+                continue
             if normalize_name_type(name.get("name_type")) == "index term":
                 continue
             if not (
@@ -570,7 +580,7 @@ def validate_default_name_collision_safety(concept_records, errors):
             ):
                 continue
 
-            key = (name.get("locale"), normalize_concept_name(name.get("name")))
+            key = (name.get("locale"), name_key(name.get("name")))
             default_names[key].append(
                 (zip_path, source_id, concept, active_names, name)
             )
@@ -584,13 +594,22 @@ def validate_default_name_collision_safety(concept_records, errors):
             continue
 
         for zip_path, source_id, concept, active_names, name in matches:
+            # OCL demotes colliding default names to index terms. For this
+            # Spanish selector, another-language fallback cannot make that safe.
+            if required_spanish_uuids is not None:
+                if concept.get("external_id") in required_spanish_uuids:
+                    errors.append(
+                        f"{zip_path}: concept {source_id}:{concept.get('id')} "
+                        f"preferred Spanish name collides: {name.get('name')!r}"
+                    )
+                continue
             alternatives = [
                 candidate
                 for candidate in active_names
                 if normalize_name_type(candidate.get("name_type")) != "index term"
                 and (
                     candidate.get("locale"),
-                    normalize_concept_name(candidate.get("name")),
+                    name_key(candidate.get("name")),
                 )
                 != key
             ]
@@ -925,6 +944,10 @@ def validate_procedure_anatomy_terminology(exports_by_path, concept_records, err
         ) or concept.get("retired") or len(by_uuid[uuid]) != 1:
             errors.append(f"{prefix}: historical {code} must preserve identity/class/datatype exactly once")
     expected_members = (new_urls - {set_url}) | set(historical)
+    validate_default_name_collision_safety(
+        concept_records, errors,
+        required_spanish_uuids={(by_url.get(url) or {}).get("external_id") for url in expected_members},
+    )
     memberships = defaultdict(list)
     equivalents = defaultdict(list)
     mapping_uuids = set()

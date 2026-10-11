@@ -5,7 +5,7 @@
 El selector institucional utiliza el conjunto OpenMRS
 `25b4e8e6-0781-5c04-bc76-888402f3f505` (`PROCEDURE-BODY-SITES`).
 Su fuente de verdad es OCL `SIHSALUS/anatomia-procedimientos`, release
-`2026-10-11-01`. Contiene 133 sitios anatómicos humanos: 120 conceptos nuevos
+`2026-10-11-02`. Contiene 133 sitios anatómicos humanos: 120 conceptos nuevos
 y 13 conceptos existentes reutilizados, unidos mediante `CONCEPT-SET` y con
 una equivalencia `SAME-AS` por sitio.
 
@@ -46,6 +46,15 @@ reasignan registros previos, ni se convierten tejidos específicos en órganos
 completos. El páncreas histórico con index-term `301305` no recibe una
 equivalencia sin aclarar su procedencia.
 
+Ano, mama y páncreas usan también «(sitio anatómico)» en su nombre preferido
+español. Sin esa calificación, OCL 3.2 degrada esos nombres a términos de índice
+por sus colisiones con `Año`, `Mamá` y `PANCREAS` en una base insensible a
+acentos. La versión `2026-10-11-02` conserva los UUIDs, mappings y nombres
+comunes como sinónimos; agrega únicamente tres nombres cualificados. No cambia
+los conceptos históricos que originaron las colisiones. La traducción común
+en `extras.display_es` sigue siendo procedencia terminológica; el nombre
+preferido del selector se declara en `names`.
+
 El selector configura `bodySiteConceptSourceType: "Concept set"` y
 `bodySiteConceptUuid` con el UUID indicado. Usa el parámetro REST nativo
 `q` junto a `memberOf`: en la versión instalada, `name` más `searchType=fuzzy`
@@ -60,13 +69,16 @@ OCL por sí solo no lo instala en QLTY.
 La release oficial se divide con `.github/scripts/split_ocl_export.py` en
 los slots `17_` (121 conceptos, incluido el conjunto) y `67_` (266 mappings).
 El ZIP oficial tiene SHA-256
-`d90f27a60fb95e797b18986155370cee6fe8ffa80c235f2b612ff6c195078dbc`;
+`d5d90e67ef6eb4968c39e74248892ee21073d5a939387565c8db32eeaf19a6e8`;
 su JSON canónico recombinado tiene SHA-256
-`beca354daa202a249fb1b08140cfd2d0fe1b2e6bb18f3fdb780080e8f646962a`.
+`26dd43fb00dc098741742a7cbfe86f247b42aa229390d5ed4f7a687b74d928a7`.
 El validador fija el hash JSON recombinado y verifica español, códigos,
 pertenencia, equivalencias, UUIDs únicos e identidades históricas. Estos exports
 son la única definición operativa del catálogo; no hay otra lista de sitios
 en CSV ni migración SQL.
+El validador rechaza colisiones del nombre preferido español aunque exista
+una alternativa inglesa. El ensayo nativo comprueba también las colisiones
+con `utf8mb4_general_ci`, sin cambiar la collation binaria de su base de CI.
 La propiedad histórica `openconceptlab.subscriptionUrl` permanece intacta:
 su namespace es necesario para resolver los conceptos importados existentes.
 
@@ -115,3 +127,8 @@ instalación nueva, actualización y reinicio:
 
 Estas pruebas verifican carga y consulta de terminología. No acreditan
 aceptación clínica, guardado integral de procedimientos ni despliegue.
+El upgrade existente parte de la versión histórica del content fijada en el
+arnés; no sustituye la aceptación específica de un servidor que ya importó
+el catálogo `2026-10-11-01`. Antes de desplegar `1.25.33`, comprobar esa
+actualización, los 133 nombres españoles y la conservación de identidades
+en el entorno de aceptación coordinado.

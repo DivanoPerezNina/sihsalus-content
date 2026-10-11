@@ -10,6 +10,18 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Nombres españoles de anatomía — candidata `1.25.33`
+
+- Actualiza el export oficial de `SIHSALUS/anatomia-procedimientos` a
+  `2026-10-11-02`. Los nombres preferidos de ano, mama y páncreas incluyen
+  «(sitio anatómico)» para evitar colisiones con Año, Mamá y PANCREAS bajo
+  comparación insensible a acentos. Conserva sus nombres comunes como sinónimos,
+  todos los UUIDs y mappings y las 13 identidades históricas reutilizadas.
+- Añade regresiones de colisiones españolas al validador y al ensayo nativo
+  existente de Initializer, sin cambiar el loader ni la collation global.
+  Publicación Maven, actualización desde el catálogo anterior y aceptación
+  visual de los 133 nombres continúan pendientes.
+
 ### Publicación nativa — candidata `1.25.32`
 
 - Fija Maven 3.9.16 mediante el Wrapper oficial y rechaza Maven 3.10 o posterior

@@ -79,7 +79,7 @@ def procedure_anatomy_result():
     association = ("40000000-0000-4000-8000-000000000000", "50000000-0000-4000-8000-000000000000",
                    "http://terminology.hl7.org/CodeSystem/v2-0550")
     rows = [["50\t" + root_uuid + "\t0\t1"], members, mappings,
-            ["60\t" + association[0] + "\t0\t70\t" + association[1] + "\tv2-0550\t0\t" + association[2]]]
+            ["60\t" + association[0] + "\t0\t70\t" + association[1] + "\tv2-0550\t0\t" + association[2]], ["0"]]
     responses = [(200, {"results": [{"uuid": by_code[code], "display": "Sitio sintético"}]})
                  for code in ("ADB", "DELT", "ESO")] + [(200, {"results": []})]
     return (root_uuid, expected, terms, association), rows, responses
@@ -140,6 +140,16 @@ class HarnessContracts(unittest.TestCase):
                 self.runtime.query = Mock(side_effect=rows)
                 with self.assertRaisesRegex(HarnessFailure, "procedure_anatomy_member_metadata_invalid"):
                     self.runtime.check_procedure_anatomy("owned", "db", "fresh")
+
+    def test_procedure_anatomy_rejects_accent_insensitive_spanish_collision(self):
+        contract, rows, responses = procedure_anatomy_result()
+        rows[-1] = ["1"]
+        self.runtime.procedure_anatomy_contract = Mock(return_value=contract)
+        self.runtime.query = Mock(side_effect=rows)
+        self.runtime.request = Mock(side_effect=responses)
+        with self.assertRaisesRegex(HarnessFailure, "procedure_anatomy_spanish_name_collision"):
+            self.runtime.check_procedure_anatomy("owned", "db", "fresh")
+        self.runtime.request.assert_not_called()
 
     def test_procedure_anatomy_rejects_search_results_outside_the_set(self):
         contract, rows, responses = procedure_anatomy_result()

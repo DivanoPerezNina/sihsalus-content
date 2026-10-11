@@ -99,6 +99,34 @@ class ProcedureAnatomyCatalogValidationTest(unittest.TestCase):
         nipple["names"] = []
         self.assert_rejected("must retain a preferred Spanish name")
 
+    def test_rejects_spanish_collision_despite_english_fallback(self):
+        # These collide with packaged PANCREAS, Año and Mamá respectively.
+        for code, common_name in (("PANCR", "Páncreas"), ("ANUS", "Ano"), ("BRST", "Mama")):
+            with self.subTest(code=code):
+                site = next(concept for concept in self.concepts if concept["id"] == code)
+                preferred = next(name for name in site["names"]
+                                 if name.get("locale") == "es" and name.get("locale_preferred"))
+                original = preferred["name"]
+                preferred["name"] = common_name
+                self.assert_rejected("preferred Spanish name collides")
+                preferred["name"] = original
+
+    def test_accepts_colliding_common_spanish_names_as_nonpreferred_synonyms(self):
+        for code, common_name in (("PANCR", "Páncreas"), ("ANUS", "Ano"), ("BRST", "Mama")):
+            site = next(concept for concept in self.concepts if concept["id"] == code)
+            common = next(name for name in site["names"]
+                          if name.get("locale") == "es" and name["name"] == common_name)
+            self.assertFalse(common.get("locale_preferred"))
+            self.assertNotEqual("fully specified", VALIDATOR.normalize_name_type(common.get("name_type")))
+        self.assertEqual([], self.errors())
+
+    def test_rejects_collision_with_other_catalog_member(self):
+        first, second = self.concepts[:2]
+        preferred = next(name for name in first["names"]
+                         if name.get("locale") == "es" and name.get("locale_preferred"))
+        second["names"].append(dict(preferred))
+        self.assert_rejected("preferred Spanish name collides")
+
     def test_preserves_historical_coded_datatype(self):
         main = self.exports[VALIDATOR.EXPECTED_SIHSALUS_CONCEPTS_EXPORT]
         chest = next(concept for concept in main["concepts"] if concept["id"] == "256")

@@ -981,6 +981,18 @@ class Harness:
                 and fhir_fields[1:3] == [fhir_uuid, "0"] and re.fullmatch(r"[1-9][0-9]*", fhir_fields[3])
                 and fhir_fields[4:] == [source_uuid, "v2-0550", "0", system_url],
                 "procedure_anatomy_fhir_source_invalid")
+        # The CI database is binary. Exercise the deployed accent/case-insensitive
+        # name comparison too: OCL would demote a colliding Spanish default name.
+        collisions = self.query(db, "SELECT COUNT(*) FROM concept_set s "
+            "JOIN concept_name n ON n.concept_id=s.concept_id AND n.voided=0 "
+            "AND n.locale='es' AND n.locale_preferred=1 "
+            "JOIN concept_name other ON other.concept_id<>n.concept_id AND other.voided=0 "
+            "AND other.locale='es' AND (other.locale_preferred=1 OR other.concept_name_type='FULLY_SPECIFIED') "
+            "AND CONVERT(other.name USING utf8mb4) COLLATE utf8mb4_general_ci="
+            "CONVERT(n.name USING utf8mb4) COLLATE utf8mb4_general_ci "
+            "JOIN concept c ON c.concept_id=other.concept_id AND c.retired=0 "
+            "WHERE s.concept_set=" + set_id)
+        require(collisions == ["0"], "procedure_anatomy_spanish_name_collision")
         by_code = {code: identifier for identifier, code, _ in expected_terms}
         for text, matches in (("abdomen", {by_code["ADB"]}), ("deltoides", {by_code["DELT"]}),
                               ("esófago", {by_code["ESO"]}), ("ceftriaxona", set())):
