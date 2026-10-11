@@ -114,6 +114,133 @@ registros guardados llevan a la madre en `personA` y al hijo en `personB`. La
 configuración frontend `motherChildRelationshipTypeUuid` también debe coincidir
 para que el flujo de parto y la sala materna compartan el mismo vínculo.
 
+## Antecedentes obstétricos
+
+`OBST-001-ANTECEDENTES` `1.0.1` permite declarar explícitamente **Ninguna** en
+antecedentes familiares y personales. Reutiliza el concepto activo `sihsalus:521`
+(`dbb7efe1-12d9-58b0-8de2-c218f626ff48`), ya asociado como respuesta a ambas
+preguntas en el catálogo. El validador declarativo del motor impide combinarlo
+con enfermedades. Ambos antecedentes siguen siendo obligatorios; no se
+preselecciona una respuesta ni se interpreta un campo vacío como ausencia.
+
+Vaginales, cesáreas, nacidos vivos, nacidos muertos y peso del RN pueden
+registrarse aunque el contador de partos esté vacío o sea cero. Conservan sus
+conceptos, límites y carácter opcional. Esto permite registrar un parto
+pretérmino sin exigir un parto a término previo.
+
+La corrección no resuelve la ambigüedad del concepto `sihsalus:915`
+(`8795c05b-f286-4d70-a1e6-69172e676f05`): su nombre preferido en español indica
+partos a término, mientras otras denominaciones y mapeos remiten a paridad.
+Se conserva la etiqueta **Partos** y no se sustituye por `sihsalus:818`, cuya
+definición tampoco acredita un contador equivalente. La
+[revisión clínica documentada](audits/2026-09-23-forms-clinical-review.md)
+requiere decisión del responsable clínico y de terminología antes de redefinir
+estos conceptos, añadir un contador o reinterpretar observaciones históricas.
+
+La nueva versión usa `AmpathFormsLoader` de Initializer; no sobrescribe el
+esquema histórico `1.0.0` ni migra sus encuentros u observaciones. La integración
+existente de [Initializer](../.github/integration/admission-initializer/README.md)
+incluye el formulario y verifica la identidad y el esquema de las versiones
+anteriores en actualización y reinicio. Su ejecución en CI sigue siendo
+necesaria; las pruebas locales no acreditan carga efectiva ni aceptación clínica.
+
+Para comprobar el esquema local, ejecutar `python3 .github/scripts/test_ampath_forms.py`,
+`python3 .github/scripts/validate_ampath_forms.py` y
+`npm test --prefix .github/integration/form-expressions` tras instalar las
+dependencias propias según la [guía de desarrollo](development.md).
+Para inspección visual, el Form Builder nativo del frontend ofrece
+`/openmrs/spa/form-builder/new`: importar este JSON y usar **Render changes** y
+**Preview**. La vista previa usa el motor real sin guardar respuestas clínicas;
+comprobar Ninguna sola, Ninguna con enfermedad y los cinco campos con Partos
+vacío o cero. Importar y previsualizar no publica el formulario en el backend.
+La publicación del paquete candidato `1.25.31` sigue el workflow existente de
+esa guía, después de sus comprobaciones y revisión; no requiere una migración
+SQL ni un script de recarga del formulario.
+
+## Responsable de puerperio inmediato
+
+`OBST-006-PUERPERIO INMEDIATO` `1.0.2` concentra proveedor, ubicación y rol en
+una página **Responsable**. Conserva el primer proveedor (`resposable`), que
+gobierna el envío nativo, junto con `lugarAtencion` y `rolDelResponsable`.
+Retira del nuevo esquema el segundo control `responsableAtencion`: ambos eran
+metadata del mismo encuentro, sin concepto ni observación independiente, y se
+rehidrataban del mismo proveedor guardado. No se renombra el ID histórico
+`resposable` ni se modifica la captura clínica de puerperio.
+
+La versión anterior `1.0.1` conserva su esquema y encuentros mediante el mismo
+loader y las comprobaciones de historia de Initializer descritas arriba. No se
+migran proveedores, roles, ubicaciones ni observaciones. La comprobación UI
+pendiente debe verificar una página Responsable, un único proveedor y guardado
+y lectura nativos con el mismo proveedor, rol y ubicación.
+
+## Sujeto de la epicrisis obstétrica
+
+`HOSP-010-EPICRISIS OBSTÉTRICO-POSTPARTO` `1.0.2` conserva la epicrisis de la
+madre y retira de la captura nueva el grupo **Recién Nacido**: género, peso,
+Apgar, observaciones, condición de alta y responsable de neonatología. Todos
+eran observaciones del RN dentro del encuentro materno. El grupo no cambia el
+sujeto del encuentro; su peso reutilizaba `5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`,
+el concepto general de peso, y podía atribuir una medida del niño a la madre.
+
+Un control Markdown nativo, sin concepto ni observación, orienta a registrar la
+evaluación y medidas en la historia propia del recién nacido desde **Hijos
+vinculados**. El profesional elige al hijo correcto mediante el vínculo nativo;
+el formulario no infiere un niño, duplica datos ni cambia el paciente activo.
+El motor del frontend registra `markdown`, transforma su tipo a `control` y
+renderiza `value`; el validador del paquete reconoce ahora ese renderer nativo
+sin valor clínico. Conserva el rechazo de observaciones sin concepto y
+renderers no soportados.
+El esquema `1.0.1` y sus encuentros se conservan mediante el loader versionado
+y la guarda de historia de Initializer. No se trasladan ni corrigen datos
+históricos; cualquier revisión de atribución previa requiere un procedimiento
+clínico separado.
+
+La revisión acotada de `HOSP-007` y `OBST-005` encontró grupos Neonato que
+registran el equipo/responsable de atención del parto, no peso ni Apgar del RN.
+Esos campos de resumen requieren su propia revisión clínica y no se eliminan
+por equivalencia con la biometría. El `pesoMadreKg` de `OBST-005` permanece como
+medida materna. `HOSP-011` no contiene un grupo de biometría de recién nacido.
+No se introducen filtros en lectores para ocultar observaciones mal atribuidas.
+
+La aceptación pendiente debe comprobar que el nuevo formulario no ofrece
+captura de RN en el encuentro materno, que muestra la orientación y que guarda
+y lee la epicrisis materna. Registrar medidas del RN exige su propia historia,
+visita y encuentro; probar únicamente con pacientes sintéticos propios.
+
+## Sujeto del tamizaje de salud mental CRED
+
+`CRED-011-SALUD MENTAL NIÑO Y CUIDADOR` `1.3.1` conserva el nombre y UUID
+JSON para continuar su historia versionada; la captura nueva corresponde al
+niño del encuentro. Retira las opciones PHQ-9 y AUDIT-C, que el propio esquema
+anterior indicaba aplicar al cuidador, y la detección de violencia en la
+madre/cuidadora con su campo `resultadoViolencia`. Estas observaciones se
+guardaban bajo el paciente activo, sin un sujeto adulto independiente.
+
+Un control Markdown nativo orienta a registrar los instrumentos y resultados
+del cuidador en su propia historia clínica. La ayuda de instrumento y
+observaciones deja de solicitar resultados del adulto. No selecciona ni abre
+una historia automáticamente, no copia puntajes y no infiere quién es el
+cuidador.
+
+PPSC/PSC-17 conserva su opción, conceptos, rango de puntaje, resultados y edad
+del niño. El plan sigue siendo obligatorio para resultados positivos o sospecha
+diagnóstica. El cálculo y la visibilidad dejan de referenciar el campo de
+violencia retirado; el puntaje sigue obligatorio para la opción infantil
+restante. Esta corrección de sujeto no valida la selección clínica de PPSC o
+PSC-17, no añade reglas de edad ni sustituye sus instrumentos oficiales.
+
+El loader nativo conserva el esquema `1.3.0` y sus encuentros; el ensayo de
+Initializer incluye ahora CRED-011 en la guarda de identidad, esquema y retiro
+de versiones anteriores. No migra ni reatribuye resultados históricos del
+cuidador. Su revisión requiere un procedimiento clínico separado. Las pruebas
+de expresiones cubren resultado vacío, negativo, positivo y sospecha sin
+referencias a campos retirados y sin dejar un plan obligatorio oculto.
+
+La aceptación visual debe comprobar la única opción infantil y la orientación,
+sin captura de violencia del cuidador. La publicación continúa por el mismo
+paquete candidato y workflow descritos arriba; esta modificación de fuente no
+acredita publicación, carga efectiva ni aceptación clínica.
+
 ## Alcance clínico documentado
 
 El inventario siguiente orienta la revisión de formularios para categoría II-1 /

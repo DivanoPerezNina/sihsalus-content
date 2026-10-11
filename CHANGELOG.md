@@ -10,13 +10,49 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-### Suscripción OCL institucional
+### Captura CRED y materna — candidata `1.25.31`
 
-- Prepara `openconceptlab.subscriptionUrl` para la release curada
-  `SIHSALUS/sihsalus/2026-09-09-1` del servidor institucional. El export
-  autenticado conserva el catálogo clínico del paquete y excluye las identidades
-  retiradas de barrios. La activación en DEV y QLTY requiere una importación
-  sintética aislada y verificación operativa; este cambio no configura credenciales.
+- CRED-001 distingue la entrega de micronutrientes del tratamiento de anemia.
+  CRED-002, CRED-003 y CRED-005 aclaran la procedencia normativa de sus descripciones.
+  Estas aclaraciones conservan identidades, campos, conceptos y valores históricos;
+  la auditoría documenta las limitaciones de captura pendientes.
+- CRED-011 `1.3.1` retira PHQ-9, AUDIT-C y detección/resultados de violencia
+  de la madre o cuidador del encuentro del niño. Conserva PPSC/PSC-17 y orienta
+  a registrar los instrumentos del adulto en su propia historia clínica. No
+  cambia edades, rangos, conceptos infantiles ni observaciones históricas.
+
+- HOSP-010 `1.0.2` retira del encuentro materno los seis campos del grupo
+  Recién Nacido y orienta a registrarlos en la historia propia del niño desde
+  Hijos vinculados. Evita atribuir peso y otras observaciones del RN a la madre;
+  conserva el esquema histórico sin trasladar ni reinterpretar datos previos.
+- OBST-006 `1.0.2` reúne responsable, ubicación y rol en una página. Conserva el
+  proveedor que gobierna el envío y retira solo el segundo control duplicado de
+  proveedor del nuevo esquema; el esquema anterior y sus encuentros permanecen.
+- OBST-001 `1.0.1` permite declarar «Ninguna» en antecedentes familiares y
+  personales con la respuesta canónica existente; impide combinarla con enfermedades.
+- La vía de parto, nacidos vivos/muertos y peso del RN se capturan de forma
+  independiente del contador de partos a término. Conserva conceptos, límites y
+  campos opcionales; no redefine paridad ni total de partos. La semántica histórica
+  del concepto `8795c05b-f286-4d70-a1e6-69172e676f05` sigue pendiente de revisión
+  clínica y terminológica.
+- Evolución mediante el loader nativo de formularios; la guarda existente de
+  Initializer incluye el nuevo esquema y la conservación de las versiones anteriores.
+
+- OBST-013 retira los puntos de corte universales de las etiquetas de anemia.
+  La clasificación confirmada requiere el trimestre y el contexto de altitud.
+  Conserva identidad del formulario, conceptos, respuestas, mediciones y datos
+  históricos; no calcula una clasificación ni modifica las reglas de laboratorio.
+
+### Compatibilidad de la suscripción OCL — candidata `1.25.31`
+
+- Restaura `openconceptlab.subscriptionUrl` a la release `2026-07-16-02` de
+  OCL Cloud, el namespace de importación previamente validado. La preparación
+  institucional de #254 cambió el host antes de disponer de una transición
+  compatible: fresh pasa, pero los dos escenarios de upgrade abortan en OCL.
+- Conserva los exports estáticos `2026-09-09-1`, exclusiones, UUIDs y checksums.
+  La release institucional curada sigue documentada, con su activación pendiente
+  de una transición nativa probada en instalación nueva y actualización. No
+  añade SQL, reimportación forzada ni borrado del historial de imports.
 
 ### Relación madre-hijo — candidata `1.25.30`
 

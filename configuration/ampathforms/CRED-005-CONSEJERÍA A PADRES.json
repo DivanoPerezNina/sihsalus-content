@@ -187,6 +187,6 @@
   "retired": false,
   "referencedForms": [],
   "uuid": "50550177-303e-4fca-8257-f78268a7d75a",
-  "description": "Registro de sesiones de consejería a padres/cuidadores sobre estimulación temprana, lactancia, alimentación y crianza según NTS 137 MINSA.",
+  "description": "Registro de sesiones de consejería a padres/cuidadores sobre estimulación temprana, lactancia, alimentación y crianza, originado en la NTS 137 MINSA. El marco CRED actual es la NTS 238-MINSA/DGIESP-2025, aprobada por RM 682-2025/MINSA, que derogó la NTS 137.",
   "version": "1.1.0"
 }

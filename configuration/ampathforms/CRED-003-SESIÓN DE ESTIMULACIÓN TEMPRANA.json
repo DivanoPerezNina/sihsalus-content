@@ -248,6 +248,6 @@
   "retired": false,
   "referencedForms": [],
   "uuid": "0bfa8707-33ce-440a-95e0-5d5e656a2770",
-  "description": "Registro de sesiones de estimulación temprana del desarrollo infantil según NTS 137 MINSA. Áreas: motora, coordinación, social, lenguaje.",
+  "description": "Registro de sesiones de estimulación temprana del desarrollo infantil, originado en la NTS 137 MINSA. Áreas: motora, coordinación, social, lenguaje. El marco CRED actual es la NTS 238-MINSA/DGIESP-2025, aprobada por RM 682-2025/MINSA, que derogó la NTS 137.",
   "version": "1.1.0"
 }

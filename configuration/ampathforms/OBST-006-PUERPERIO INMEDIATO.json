@@ -171,26 +171,6 @@
                 "isSearchable": true
               },
               "required": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "label": "Responsable",
-      "sections": [
-        {
-          "label": "Responsable",
-          "isExpanded": "true",
-          "questions": [
-            {
-              "id": "responsableAtencion",
-              "label": "Responsable atención",
-              "type": "encounterProvider",
-              "questionOptions": {
-                "rendering": "ui-select-extended",
-                "isSearchable": true
-              }
             },
             {
               "type": "encounterRole",
@@ -215,5 +195,5 @@
   "referencedForms": [],
   "uuid": "b0ae22a2-3fbb-49ce-a91f-fa99527e4284",
   "description": "Formulario para el registro del puerperio inmediato",
-  "version": "1.0.1"
+  "version": "1.0.2"
 }

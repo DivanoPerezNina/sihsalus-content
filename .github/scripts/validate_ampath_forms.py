@@ -48,6 +48,7 @@ SUPPORTED_RENDERINGS = {
     "date",
     "datetime",
     "group",
+    "markdown",
     "number",
     "radio",
     "repeating",
@@ -58,7 +59,7 @@ SUPPORTED_RENDERINGS = {
     "ui-select-extended",
     "workspace-launcher",
 }
-NON_VALUE_RENDERINGS = {"group", "repeating", "workspace-launcher"}
+NON_VALUE_RENDERINGS = {"group", "markdown", "repeating", "workspace-launcher"}
 VALUE_RENDERINGS = SUPPORTED_RENDERINGS - NON_VALUE_RENDERINGS
 EXPRESSION_KEYS = {
     "alertWhenExpression",

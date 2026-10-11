@@ -22,7 +22,7 @@ PERSON_ATTRIBUTE_TYPES_PATH = Path(
     "configuration/personattributetypes/personattributetypes.csv"
 )
 EXPECTED_SIHSALUS_SUBSCRIPTION_URL = (
-    "https://api.gidis-terminology.duckdns.org/orgs/SIHSALUS/sources/sihsalus/2026-09-09-1"
+    "https://api.openconceptlab.org/orgs/SIHSALUS/sources/sihsalus/2026-07-16-02"
 )
 EXPECTED_SIHSALUS_CONCEPTS_EXPORT = (
     OCL_DIR / "10_SIHSALUS_sihsalus_concepts_2026-09-09-1.zip"
@@ -1335,7 +1335,8 @@ def validate_ocl_global_properties(errors):
 
     if properties.get("openconceptlab.subscriptionUrl") != EXPECTED_SIHSALUS_SUBSCRIPTION_URL:
         errors.append(
-            "openconceptlab.subscriptionUrl must use the reviewed release without retired neighborhood UUIDs: "
+            "openconceptlab.subscriptionUrl must preserve the validated import namespace "
+            "until a supported host transition: "
             f"{EXPECTED_SIHSALUS_SUBSCRIPTION_URL}"
         )
     if properties.get("order.durationUnitsConceptUuid") != DURATION_UNITS_EXTERNAL_ID:

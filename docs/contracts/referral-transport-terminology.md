@@ -33,8 +33,10 @@ Este catálogo conserva su release independiente del source principal. Su migrac
 mappings `Q-AND-A` de `sihsalus`; el frontend coordinado utiliza explícitamente los tres UUIDs
 como respuestas permitidas. Desde `1.25.19`, el paquete incorpora el export principal `2026-09-09-1`
 con las exclusiones de barrios documentadas en [la auditoría OCL](../audits/2026-09-12-ocl-refresh.md);
-`openconceptlab.subscriptionUrl` usa la release curada `2026-09-09-1` del servidor
-institucional; los mappings `Q-AND-A` de este catálogo conservan sus identidades.
+`openconceptlab.subscriptionUrl` conserva la release `2026-07-16-02` de OCL Cloud
+y el namespace validado de los imports existentes. La transición al servidor
+institucional sigue pendiente de validación nativa de upgrade; los mappings
+`Q-AND-A` de este catálogo conservan sus identidades.
 
 ## Actualización
 

@@ -148,7 +148,7 @@
           ]
         },
         {
-          "label": "Hemoglobina",
+          "label": "Hemoglobina y clasificación según trimestre y altitud",
           "isExpanded": "true",
           "questions": [
             {
@@ -168,7 +168,7 @@
               "validators": []
             },
             {
-              "label": "Clasificación de Anemia",
+              "label": "Clasificación de anemia confirmada",
               "type": "obs",
               "required": false,
               "id": "clasificacionAnemia",
@@ -178,19 +178,19 @@
                 "answers": [
                   {
                     "concept": "c69b424f-4d9c-4ba9-aeae-045ff5a5e530",
-                    "label": "Sin Anemia (≥ 11.0 g/dL)"
+                    "label": "Sin anemia"
                   },
                   {
                     "concept": "0c6478bd-ea06-40b2-a93f-a0a1f5c13b97",
-                    "label": "Anemia Leve (10.0 - 10.9 g/dL)"
+                    "label": "Anemia leve"
                   },
                   {
                     "concept": "aed747d5-fba0-49fc-9e29-ebc56b62fb22",
-                    "label": "Anemia Moderada (7.0 - 9.9 g/dL)"
+                    "label": "Anemia moderada"
                   },
                   {
                     "concept": "b1b29870-eccd-4821-847c-668df29b4ad4",
-                    "label": "Anemia Severa (< 7.0 g/dL)"
+                    "label": "Anemia severa"
                   }
                 ]
               },
