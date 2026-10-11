@@ -12,6 +12,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Captura CRED y materna — candidata `1.25.31`
 
+- CRED-001 distingue la entrega de micronutrientes del tratamiento de anemia.
+  CRED-002, CRED-003 y CRED-005 aclaran la procedencia normativa de sus descripciones.
+  Estas aclaraciones conservan identidades, campos, conceptos y valores históricos;
+  la auditoría documenta las limitaciones de captura pendientes.
 - CRED-011 `1.3.1` retira PHQ-9, AUDIT-C y detección/resultados de violencia
   de la madre o cuidador del encuentro del niño. Conserva PPSC/PSC-17 y orienta
   a registrar los instrumentos del adulto en su propia historia clínica. No
@@ -33,8 +37,6 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
   clínica y terminológica.
 - Evolución mediante el loader nativo de formularios; la guarda existente de
   Initializer incluye el nuevo esquema y la conservación de las versiones anteriores.
-
-### Tamizaje prenatal
 
 - OBST-013 retira los puntos de corte universales de las etiquetas de anemia.
   La clasificación confirmada requiere el trimestre y el contexto de altitud.
