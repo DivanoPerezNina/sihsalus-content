@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 8
+          java-version: 21
       - name: Validate AMPATH forms
         run: python3 .github/scripts/validate_ampath_forms.py
       - name: Test AMPATH form identity validation
@@ -122,7 +122,7 @@ jobs:
       - name: Build with Maven
         id: build_with_maven
         run: |
-          ./mvnw clean verify --batch-mode --file pom.xml
+          ./mvnw --show-version clean verify --batch-mode --file pom.xml
 
   publish:
     needs: [build, admission-migration, admission-initializer, reference-range-access]
@@ -134,7 +134,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 8
+          java-version: 21
       - name: Check Maven Central version
         id: central-version
         run: |
@@ -158,19 +158,16 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 8
-          server-id: central
-          server-username: CENTRAL_USERNAME
-          server-password: CENTRAL_PASSWORD
+          java-version: 21
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: GPG_PASSPHRASE
 
       - name: Deploy to Maven Central
         if: steps.central-version.outputs.exists == 'false'
-        run: ./mvnw -B -P release deploy --file pom.xml
+        run: ./mvnw --show-version -B -P release clean deploy --file pom.xml
         env:
-          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Verify Maven Central publication

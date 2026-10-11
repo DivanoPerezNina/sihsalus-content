@@ -10,10 +10,11 @@ leer [AGENTS.md](../AGENTS.md) y el [contrato correspondiente](README.md#contrat
 - Node 24 y npm para ejecutar las expresiones JavaScript de formularios con la
   misma biblioteca de fechas del motor. Esta prueba usa el runner nativo de Node;
   los validadores Python no ejecutan JavaScript.
-- Maven Wrapper fija Maven 3.9.16 para el paquete y su publicación; descarga la
+- Maven Wrapper fija Maven 3.10.0 para el paquete y su publicación; descarga la
   distribución oficial y comprueba su SHA-256.
-- Java: CI usa Java 8 para el paquete, Java 17 para autorización de rangos y
-  Java 21 para MariaDB/Liquibase.
+- Java: CI usa Java 21 LTS para el paquete, publicación y MariaDB/Liquibase,
+  alineado con el backend. El ensayo independiente de autorización de rangos
+  mantiene Java 17.
 - MariaDB y el backend de OpenMRS solo se necesitan en sus ensayos de integración;
   cada ensayo documenta su infraestructura y aislamiento.
 
@@ -117,40 +118,56 @@ errores de carga aun cuando el endpoint HTTP responda correctamente.
 
 ### Compatibilidad de la herramienta de publicación
 
-Usar `./mvnw` para construir y publicar el paquete. Central Publishing 0.10.0
-utiliza el instalador de artefactos heredado: con Maven 3.10 incorpora
-`maven-metadata-local.xml` y `_remote.repositories` al bundle, que Central rechaza
-porque no son artefactos publicables. El Wrapper oficial fija Maven 3.9.16;
-Maven Enforcer rechaza Maven 3.10 o posterior en el perfil `release`, antes de
-firmar o subir archivos. No se modifica el ZIP ni se desactivan los bloqueos del
-repositorio local.
+Usar Java 21 LTS y `./mvnw` para construir y publicar con Maven 3.10.0. El Wrapper
+comprueba el SHA-256 de la distribución oficial; CI utiliza el mismo ejecutable
+que el desarrollo local. El perfil `release` requiere Maven 3.10 y mantiene la
+firma de Maven GPG.
 
-Es una restricción de compatibilidad de la herramienta, bajo responsabilidad de
-los mantenedores de publicación del content. El
-[diagnóstico upstream de Maven Resolver #2017](https://github.com/apache/maven-resolver/issues/2017)
-identifica el uso de la API heredada por Central Publishing; actualizar solamente
-a Central Publishing 0.11.0 conserva ese código. Retirar esta restricción cuando
-el plugin soporte el instalador de Maven 3.10 y la regresión del bundle pase con
-esa versión, antes de cambiar el Wrapper.
+La publicación utiliza los mecanismos nativos de Maven y JReleaser 1.26.0:
+
+1. `maven-deploy-plugin` coloca el POM, ZIP y sus firmas en un repositorio remoto
+   de tipo `file:` bajo `target/staging-deploy`.
+2. El goal `jreleaser:deploy`, enlazado a la fase `deploy`, valida el POM, calcula
+   los checksums y crea el bundle de Maven Central. Reutiliza las firmas existentes.
+3. JReleaser publica mediante el Portal y comprueba su resultado. CI además espera
+   que el POM y ZIP sean descargables mediante `wait_for_maven_central.sh`.
+
+El repositorio de staging está separado del repositorio local de dependencias.
+Se sustituye Central Publishing 0.10.0 porque su instalador heredado incorpora
+metadata local con Maven 3.10; la versión 0.11.0 conserva ese comportamiento.
+No se limpian ni reempaquetan bundles con scripts. JReleaser administra el bundle
+partiendo de artefactos desplegados mediante la API de Maven.
+PomChecker conserva los errores como fallos. `strict=false` y `failOnWarning=false`
+permiten los repositorios OpenMRS existentes, que el checker señala como avisos;
+son necesarios para el plugin de empaquetado que no está publicado en Central.
+`verifyPom=true` y `failOnError=true` conservan las comprobaciones obligatorias del POM.
+
+Las credenciales existentes `CENTRAL_USERNAME` y `CENTRAL_PASSWORD` se proporcionan
+al publicador mediante las variables `JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME` y
+`JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD`. `authorization=BASIC` indica al cliente
+que construya el token Bearer del Portal a partir de ese par. La firma sigue usando
+`GPG_PRIVATE_KEY` y `GPG_PASSPHRASE` en CI. El goal empleado es exclusivamente
+`deploy`; no se ejecuta `full-release` ni se crean releases o tags de GitHub.
 
 ```sh
 bash .github/scripts/test_maven_central_publication.sh --bundle
 ```
 
-Esta regresión usa el perfil real contra un destino loopback cerrado, credenciales
-sintéticas temporales y firma desactivada solo para la prueba. Comprueba el POM,
-ZIP y sus checksums, y rechaza archivos de metadata del repositorio. No sube a
-Central ni acredita firma o publicación reales. `skipPublishing=true` no sirve
-para esta comprobación en 0.10.0: también omite el staging de los artefactos.
+Esta regresión ejecuta el perfil real con el modo `dryRun` nativo de JReleaser y
+una clave GPG efímera, sin claves de producción ni subidas. Comprueba que el bundle
+contenga exactamente POM, ZIP, sus firmas válidas y los cuatro checksums; rechaza
+archivos de metadata del repositorio. También retira el nombre de una copia del
+POM en staging y exige que PomChecker rechace su publicación, comprobando que los
+errores siguen bloqueando el flujo. Un ensayo local correcto no acredita una
+publicación real: el job `publish` y la comprobación de descarga son obligatorios.
 
-El perfil `release` usa `autoPublish=true` y `waitUntil=validated`: Maven espera
-la subida y validación de Sonatype; los errores de cualquiera de ellas bloquean
-el workflow. La publicación continúa automáticamente y el paso obligatorio
-`Verify Maven Central publication` espera la disponibilidad pública del POM y ZIP.
-Así se evita depender de la confirmación final del Portal antes de comprobar los
-archivos que consumirá el backend. Un `./mvnw -P release deploy` exitoso por sí solo
-no acredita que ambos archivos ya puedan descargarse; fuera de CI se debe ejecutar
-también `.github/scripts/wait_for_maven_central.sh <version>`.
+Para publicar fuera de CI, usar `./mvnw -P release clean deploy` con las mismas
+variables de credenciales y el llavero de firma configurado; comprobar después
+`.github/scripts/wait_for_maven_central.sh <version>`.
+
+Referencias: [publicación con Maven y JReleaser](https://jreleaser.org/guide/latest/examples/maven/maven-central.html),
+[configuración del Portal](https://jreleaser.org/guide/latest/reference/deploy/maven/maven-central.html)
+y [cambios de Maven 3.10.0](https://maven.apache.org/docs/3.10.0/release-notes.html).
 
 Después de que `publish` confirme el POM y ZIP en Maven Central, el mismo
 workflow llama a `Validate with SIHSALUS` usando el mismo commit del paquete.

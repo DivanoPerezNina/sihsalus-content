@@ -136,6 +136,12 @@
     <profiles>
         <profile>
             <id>release</id>
+            <distributionManagement>
+                <repository>
+                    <id>local-staging</id>
+                    <url>file://${project.build.directory}/staging-deploy</url>
+                </repository>
+            </distributionManagement>
             <build>
                 <plugins>
                     <plugin>
@@ -151,8 +157,8 @@
                                 <configuration>
                                     <rules>
                                         <requireMavenVersion>
-                                            <version>[3.9.0,3.10.0-alpha-1)</version>
-                                            <message>Use ./mvnw for releases: Central Publishing 0.10.0 bundles local repository metadata with Maven 3.10 or later.</message>
+                                            <version>[3.10.0,4.0.0)</version>
+                                            <message>Use ./mvnw for releases with Maven 3.10.0.</message>
                                         </requireMavenVersion>
                                     </rules>
                                 </configuration>
@@ -174,15 +180,45 @@
                         </executions>
                     </plugin>
                     <plugin>
-                        <groupId>org.sonatype.central</groupId>
-                        <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.10.0</version>
-                        <extensions>true</extensions>
+                        <groupId>org.jreleaser</groupId>
+                        <artifactId>jreleaser-maven-plugin</artifactId>
+                        <version>1.26.0</version>
+                        <executions>
+                            <execution>
+                                <id>publish-central</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                         <configuration>
-                            <publishingServerId>central</publishingServerId>
-                            <autoPublish>true</autoPublish>
-                            <!-- CI confirms public POM and ZIP availability after validation. -->
-                            <waitUntil>validated</waitUntil>
+                            <jreleaser>
+                                <deploy>
+                                    <maven>
+                                        <pomchecker>
+                                            <!-- OpenMRS build plugins are published outside Central. -->
+                                            <strict>false</strict>
+                                            <failOnWarning>false</failOnWarning>
+                                            <failOnError>true</failOnError>
+                                        </pomchecker>
+                                        <mavenCentral>
+                                            <central>
+                                                <active>RELEASE</active>
+                                                <url>https://central.sonatype.com/api/v1/publisher</url>
+                                                <authorization>BASIC</authorization>
+                                                <!-- Maven GPG signs before native deploy stages the artifacts. -->
+                                                <sign>false</sign>
+                                                <checksums>true</checksums>
+                                                <verifyPom>true</verifyPom>
+                                                <stagingRepositories>
+                                                    <stagingRepository>${project.build.directory}/staging-deploy</stagingRepository>
+                                                </stagingRepositories>
+                                            </central>
+                                        </mavenCentral>
+                                    </maven>
+                                </deploy>
+                            </jreleaser>
                         </configuration>
                     </plugin>
                 </plugins>
