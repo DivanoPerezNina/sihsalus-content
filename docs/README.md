@@ -20,6 +20,7 @@ Consultar [AGENTS.md](../AGENTS.md) antes de contribuir.
 | Identidad institucional | [Hospital Santa Clotilde](contracts/hospital-santa-clotilde-institutional-metadata.md) |
 | Catálogo territorial | [Barrios de Santa Clotilde](contracts/santa-clotilde-neighborhoods.md) |
 | Referencias institucionales | [Terminología de transporte](contracts/referral-transport-terminology.md) |
+| Procedimientos | [Sitios anatómicos en español](contracts/procedure-anatomy.md) |
 | Admisión | [Reconciliación de roles](contracts/admission-role-reconciliation.md), [confirmación de pago](contracts/arrival-payment.md) |
 | Perfiles del hospital | [Criterios y aceptación](contracts/hospital-access-profiles.md), [contrato verificable](contracts/hospital-access-profiles.json) |
 | Visit Notes | [Identidades y datatypes](contracts/visit-note-content-contract.json) |

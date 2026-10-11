@@ -12,6 +12,14 @@ files. Publication and retirement flags must match the declarations. Upgrades pr
 previous forms; a restart must leave the resulting forms unchanged. These are
 loader checks, not clinical encounter save/edit tests.
 
+The same scenarios check the procedure anatomy set: 133 exact members with
+preferred Spanish names, unchanged historical classes/datatypes, 133 HL7
+reference mappings, the native FHIR source/URI association and four
+`q`/`memberOf` searches. Both upgrades also compare persisted set/mapping and
+FHIR association identities after restart. Expectations come from the shipped
+OCL exports and the native FHIR association CSV, not a second operational catalog. These
+checks do not establish clinical approval or procedure CRUD acceptance.
+
 The expected schema hash applies Core's `OpenmrsObjectSaveHandler` outer-whitespace
 trimming when saving `ClobDatatypeStorage`; internal JSON bytes must still match.
 Historical hashes are compared as stored, without modifying previous schemas.

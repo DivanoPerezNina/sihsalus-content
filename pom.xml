@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.proyecto-santaclotilde</groupId>
     <artifactId>sihsalus-content</artifactId>
-    <version>1.25.31</version>
+    <version>1.25.32</version>
     <packaging>pom</packaging>
     <name>SIHSALUS Content Package</name>
     <description

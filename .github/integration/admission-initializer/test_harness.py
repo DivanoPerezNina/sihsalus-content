@@ -61,6 +61,30 @@ def ocl_refresh_result():
     ]
 
 
+def procedure_anatomy_result():
+    """Synthetic database/search responses; no clinical data or persisted codes."""
+    root_uuid = "90000000-0000-4000-8000-000000000000"
+    expected, terms, members, mappings = {}, set(), [], []
+    codes = ["ADB", "DELT", "ESO"] + ["synthetic-" + str(index) for index in range(130)]
+    by_code = {}
+    for index, code in enumerate(codes):
+        identifier = f"10000000-0000-4000-8000-{index:012d}"
+        mapping_uuid = f"20000000-0000-4000-8000-{index:012d}"
+        by_code[code] = identifier
+        expected[identifier] = ("Anatomy", "N/A", "Sitio sintético " + str(index))
+        terms.add((identifier, code, mapping_uuid))
+        members.append(f"{100 + index}\t30000000-0000-4000-8000-{index:012d}\t{500 + index}\t"
+                       + identifier + "\t0\t" + "\t".join(expected[identifier]))
+        mappings.append(f"{identifier}\t{code}\t{mapping_uuid}\t{900 + index}\t{1200 + index}")
+    association = ("40000000-0000-4000-8000-000000000000", "50000000-0000-4000-8000-000000000000",
+                   "http://terminology.hl7.org/CodeSystem/v2-0550")
+    rows = [["50\t" + root_uuid + "\t0\t1"], members, mappings,
+            ["60\t" + association[0] + "\t0\t70\t" + association[1] + "\tv2-0550\t0\t" + association[2]]]
+    responses = [(200, {"results": [{"uuid": by_code[code], "display": "Sitio sintético"}]})
+                 for code in ("ADB", "DELT", "ESO")] + [(200, {"results": []})]
+    return (root_uuid, expected, terms, association), rows, responses
+
+
 class HarnessContracts(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="admission-harness-unit-")
@@ -75,6 +99,90 @@ class HarnessContracts(unittest.TestCase):
         }
         self.runtime = object.__new__(harness.Harness)
         self.runtime.hospital_roles = []
+
+    def test_procedure_anatomy_checks_native_search_and_preserves_database_identities(self):
+        contract, rows, responses = procedure_anatomy_result()
+        self.runtime.procedure_anatomy_contract = Mock(return_value=contract)
+        self.runtime.query = Mock(side_effect=rows * 2)
+        self.runtime.request = Mock(side_effect=responses * 2)
+        with patch.object(harness, "emit"):
+            previous = self.runtime.check_procedure_anatomy("owned", "db", "upgrade")
+            self.assertEqual(self.runtime.check_procedure_anatomy("owned", "db", "restart", previous), previous)
+        paths = [call.args[2] for call in self.runtime.request.call_args_list[:4]]
+        self.assertIn("q=es%C3%B3fago", paths[2])
+        self.assertTrue(all("memberOf=" + contract[0] in path and "name=" not in path for path in paths))
+        contract, changed, responses = procedure_anatomy_result()
+        changed[1][0] = "9999" + changed[1][0][changed[1][0].index("\t"):]
+        self.runtime.query = Mock(side_effect=changed)
+        self.runtime.request = Mock(side_effect=responses)
+        with self.assertRaisesRegex(HarnessFailure, "procedure_anatomy_changed_on_restart"):
+            self.runtime.check_procedure_anatomy("owned", "db", "restart", previous)
+
+    def test_procedure_anatomy_rejects_incomplete_members_and_changed_hl7_mapping(self):
+        for section in (1, 2):
+            with self.subTest(section=section):
+                contract, rows, responses = procedure_anatomy_result()
+                rows[section].pop()
+                self.runtime.procedure_anatomy_contract = Mock(return_value=contract)
+                self.runtime.query = Mock(side_effect=rows)
+                self.runtime.request = Mock(side_effect=responses)
+                with self.assertRaisesRegex(HarnessFailure, "procedure_anatomy_(members|hl7_mappings)_invalid"):
+                    self.runtime.check_procedure_anatomy("owned", "db", "fresh")
+
+    def test_procedure_anatomy_rejects_changed_datatype_or_missing_spanish(self):
+        for field, value in ((6, "Coded"), (7, "NULL")):
+            with self.subTest(field=field):
+                contract, rows, _ = procedure_anatomy_result()
+                fields = rows[1][0].split("\t")
+                fields[field] = value
+                rows[1][0] = "\t".join(fields)
+                self.runtime.procedure_anatomy_contract = Mock(return_value=contract)
+                self.runtime.query = Mock(side_effect=rows)
+                with self.assertRaisesRegex(HarnessFailure, "procedure_anatomy_member_metadata_invalid"):
+                    self.runtime.check_procedure_anatomy("owned", "db", "fresh")
+
+    def test_procedure_anatomy_rejects_search_results_outside_the_set(self):
+        contract, rows, responses = procedure_anatomy_result()
+        responses[-1] = (200, {"results": [{"uuid": "90000000-0000-4000-8000-999999999999"}]})
+        self.runtime.procedure_anatomy_contract = Mock(return_value=contract)
+        self.runtime.query = Mock(side_effect=rows)
+        self.runtime.request = Mock(side_effect=responses)
+        with self.assertRaisesRegex(HarnessFailure, "procedure_anatomy_search_membership_invalid"):
+            self.runtime.check_procedure_anatomy("owned", "db", "fresh")
+
+    def test_procedure_anatomy_rejects_missing_duplicate_or_incorrect_fhir_association(self):
+        for defect in ("missing", "duplicate", "retired", "source", "url"):
+            with self.subTest(defect=defect):
+                contract, rows, responses = procedure_anatomy_result()
+                if defect == "missing":
+                    rows[3] = []
+                elif defect == "duplicate":
+                    rows[3] *= 2
+                else:
+                    fields = rows[3][0].split("\t")
+                    field, value = {"retired": (2, "1"), "source": (4, "wrong-source"),
+                                    "url": (7, "https://example.org/wrong-system")}[defect]
+                    fields[field] = value
+                    rows[3][0] = "\t".join(fields)
+                self.runtime.procedure_anatomy_contract = Mock(return_value=contract)
+                self.runtime.query = Mock(side_effect=rows)
+                self.runtime.request = Mock(side_effect=responses)
+                with self.assertRaisesRegex(HarnessFailure, "procedure_anatomy_fhir_source_invalid"):
+                    self.runtime.check_procedure_anatomy("owned", "db", "fresh")
+                self.runtime.request.assert_not_called()
+
+    def test_procedure_anatomy_preserves_fhir_association_identity_on_restart(self):
+        contract, rows, responses = procedure_anatomy_result()
+        self.runtime.procedure_anatomy_contract = Mock(return_value=contract)
+        self.runtime.query = Mock(side_effect=rows)
+        self.runtime.request = Mock(side_effect=responses)
+        with patch.object(harness, "emit"):
+            previous = self.runtime.check_procedure_anatomy("owned", "db", "upgrade")
+        rows[3][0] = "99" + rows[3][0][rows[3][0].index("\t"):]
+        self.runtime.query = Mock(side_effect=rows)
+        self.runtime.request = Mock(side_effect=responses)
+        with self.assertRaisesRegex(HarnessFailure, "procedure_anatomy_changed_on_restart"):
+            self.runtime.check_procedure_anatomy("owned", "db", "restart", previous)
 
     def test_disposable_database_requires_effective_flush_configuration(self):
         self.runtime.network, self.runtime.nonce = "private-network", "synthetic"

@@ -10,6 +10,22 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Sitios anatómicos de procedimientos — candidata `1.25.32`
+
+- Añade un conjunto de 133 sitios anatómicos humanos basado en los códigos
+  HL7 v2-0550, versión 4.0.0 / THO 7.4.0, disponible bajo CC0. Los nombres en
+  español son una adaptación SIHSALUS, sin atribuir homologación nacional.
+- Reutiliza 13 conceptos históricos, agrega 120 sitios y conserva los demás
+  registros y sus clases, tipos de dato, observaciones y UUIDs. El conjunto y
+  sus equivalencias se distribuyen mediante exports OCL nativos versionados.
+- Requiere el selector de procedimientos configurado por conjunto y la búsqueda
+  nativa `q` + `memberOf`. La incorporación al servidor terminológico no activa
+  el selector en QLTY. La aceptación clínica continúa pendiente.
+- El ensayo existente de Initializer comprueba pertenencia, nombres españoles,
+  equivalencias HL7, asociación FHIR, búsqueda y estabilidad al reiniciar en
+  fresh y upgrade. La fuente se asocia al URI HL7 mediante el dominio nativo
+  `fhirconceptsources`; no acredita intercambio integral de procedimientos.
+
 ### Captura CRED y materna — candidata `1.25.31`
 
 - CRED-001 distingue la entrega de micronutrientes del tratamiento de anemia.

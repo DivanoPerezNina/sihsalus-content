@@ -21,6 +21,7 @@ ADDRESS_CONFIGURATION_PATH = Path(
 PERSON_ATTRIBUTE_TYPES_PATH = Path(
     "configuration/personattributetypes/personattributetypes.csv"
 )
+FHIR_CONCEPT_SOURCES_PATH = Path("configuration/fhirconceptsources/fhirconceptsources.csv")
 EXPECTED_SIHSALUS_SUBSCRIPTION_URL = (
     "https://api.openconceptlab.org/orgs/SIHSALUS/sources/sihsalus/2026-07-16-02"
 )
@@ -79,6 +80,38 @@ NEIGHBORHOOD_PRESENTATION_METADATA = {
 }
 REFERRAL_SOURCE = "referencia-institucional"
 REFERRAL_VERSION = "2026-08-25-01"
+PROCEDURE_ANATOMY_SOURCE = "anatomia-procedimientos"
+PROCEDURE_ANATOMY_VERSION = "2026-10-11-01"
+PROCEDURE_ANATOMY_SET_CODE = "PROCEDURE-BODY-SITES"
+PROCEDURE_ANATOMY_SET_UUID = "25b4e8e6-0781-5c04-bc76-888402f3f505"
+PROCEDURE_ANATOMY_HL7_URL = "http://terminology.hl7.org/CodeSystem/v2-0550"
+PROCEDURE_ANATOMY_CONCEPT_SOURCE_UUID = "30c3cf28-091d-5ec9-ace5-5edfc9e1543b"
+PROCEDURE_ANATOMY_FHIR_SOURCE_UUID = "ab151b90-06d7-5734-928d-5907c65226b5"
+PROCEDURE_ANATOMY_CONCEPTS_EXPORT = OCL_DIR / (
+    f"17_SIHSALUS_{PROCEDURE_ANATOMY_SOURCE}_concepts_{PROCEDURE_ANATOMY_VERSION}.zip"
+)
+PROCEDURE_ANATOMY_MAPPINGS_EXPORT = OCL_DIR / (
+    f"67_SIHSALUS_{PROCEDURE_ANATOMY_SOURCE}_mappings_{PROCEDURE_ANATOMY_VERSION}.zip"
+)
+EXPECTED_PROCEDURE_ANATOMY_CANONICAL_SHA256 = (
+    "beca354daa202a249fb1b08140cfd2d0fe1b2e6bb18f3fdb780080e8f646962a"
+)
+# Historical identities are assertions, not a second operational catalog.
+PROCEDURE_ANATOMY_HISTORICAL = {
+    "85": ("NIPPL", "99a163e0-0352-4d46-a994-3b75a25cf4be", "Anatomy", "N/A"),
+    "256": ("CHES", "08579338-2599-438e-b3be-6cd3e7d955bd", "Anatomy", "Coded"),
+    "325": ("LIP", "8a914b99-9e1f-4d69-ae15-8f1699b28dc5", "Anatomy", "N/A"),
+    "327": ("PLATH", "aadfe8f3-3417-4075-83f0-b06692c2806e", "Anatomy", "N/A"),
+    "329": ("PLATS", "ac2051b4-a46f-47f3-a7d6-74d832900e44", "Anatomy", "N/A"),
+    "344": ("LARYN", "18a4c1f6-dde3-44f7-bdd7-c99f56525609", "Anatomy", "N/A"),
+    "348": ("FBMAX", "ae834c80-902d-4f5b-89c0-a669ae584687", "Anatomy", "N/A"),
+    "349": ("ORO", "5524065b-2ee1-4d4e-8ad8-28c61d407c2a", "Anatomy", "N/A"),
+    "2790": ("OVARY", "24dd6942-b693-485d-9924-28b86b323d27", "Misc", "N/A"),
+    "2787": ("ENDM", "48403d33-d806-4455-94b4-dd69c82a6318", "Misc", "N/A"),
+    "1351": ("PLC", "ee00490c-9481-4e4a-a098-d8dc481bc94b", "Finding", "N/A"),
+    "1294": ("ESO", "e066680d-d825-45fe-a0ad-f3734dea6cb2", "Misc", "N/A"),
+    "1239": ("TONG", "a25eefd5-80cd-496f-9578-dd2b0152a11e", "Misc", "N/A"),
+}
 REFERRAL_TRANSPORT_CSV = Path(
     "configuration/concepts/referral_transport_concepts.csv"
 )
@@ -406,6 +439,7 @@ def main():
     )
     validate_neighborhood_backend_configuration(errors)
     validate_referral_transport_terminology(exports_by_path, concept_records, errors)
+    validate_procedure_anatomy_terminology(exports_by_path, concept_records, errors)
     validate_ocl_global_properties(errors)
 
     if errors:
@@ -793,6 +827,189 @@ def validate_procedure_terminology(concepts, mappings, errors):
             )
         if preferred_spanish_names(concept) != [spanish_name]:
             errors.append(f"sihsalus: duration unit {concept_id} must prefer {spanish_name!r} in Spanish")
+
+
+def validate_procedure_anatomy_terminology(exports_by_path, concept_records, errors):
+    prefix = "procedure anatomy"
+    provenance = {
+        "upstream_system": PROCEDURE_ANATOMY_HL7_URL,
+        "upstream_version": "4.0.0", "translation_owner": "SIHSALUS",
+    }
+    paths = {PROCEDURE_ANATOMY_CONCEPTS_EXPORT, PROCEDURE_ANATOMY_MAPPINGS_EXPORT}
+    if set(OCL_DIR.glob(f"*_SIHSALUS_{PROCEDURE_ANATOMY_SOURCE}_*.zip")) != paths:
+        errors.append(f"{prefix}: must bundle only the pinned concepts/mappings pair")
+    exports = [exports_by_path.get(path) for path in (
+        PROCEDURE_ANATOMY_CONCEPTS_EXPORT, PROCEDURE_ANATOMY_MAPPINGS_EXPORT
+    )]
+    if not all(isinstance(export, dict) and export for export in exports):
+        errors.append(f"{prefix}: required official OCL export is missing")
+        return
+    for export, counts in zip(exports, ((121, 0), (0, 266))):
+        for field, expected in {
+            "type": "Source Version", "id": PROCEDURE_ANATOMY_VERSION,
+            "version": PROCEDURE_ANATOMY_VERSION, "short_code": PROCEDURE_ANATOMY_SOURCE,
+            "owner": "SIHSALUS", "owner_type": "Organization", "released": True,
+        }.items():
+            if export.get(field) != expected:
+                errors.append(f"{prefix}: export {field} must be {expected!r}")
+        for key, count in zip(("concepts", "mappings"), counts):
+            if not isinstance(export.get(key), list) or len(export[key]) != count:
+                errors.append(f"{prefix}: export must contain exactly {count} {key}")
+    if not all(isinstance(export.get(key), list) for export in exports
+               for key in ("concepts", "mappings")):
+        return
+    metadata = [{key: value for key, value in export.items()
+                 if key not in {"concepts", "mappings"}} for export in exports]
+    if metadata[0] != metadata[1]:
+        errors.append(f"{prefix}: split exports must preserve identical release metadata")
+    combined = dict(exports[0], mappings=exports[1]["mappings"])
+    digest = hashlib.sha256(json.dumps(
+        combined, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")).hexdigest()
+    if digest != EXPECTED_PROCEDURE_ANATOMY_CANONICAL_SHA256:
+        errors.append(f"{prefix}: canonical official release hash mismatch: actual={digest}")
+
+    source_url = f"/orgs/SIHSALUS/sources/{PROCEDURE_ANATOMY_SOURCE}/"
+    set_url = f"{source_url}concepts/{PROCEDURE_ANATOMY_SET_CODE}/"
+    source = exports[0].get("source") or {}
+    if not isinstance(source, dict):
+        errors.append(f"{prefix}: source metadata must be an object")
+        return
+    for field, expected in {
+        "id": PROCEDURE_ANATOMY_SOURCE, "owner": "SIHSALUS", "owner_type": "Organization",
+        "custom_validation_schema": "OpenMRS", "default_locale": "es",
+    }.items():
+        if source.get(field) != expected:
+            errors.append(f"{prefix}: source {field} must be {expected!r}")
+    if normalize_ocl_url(source.get("url")) != source_url:
+        errors.append(f"{prefix}: source URL mismatch")
+    if set(source.get("supported_locales") or []) != {"es", "en"}:
+        errors.append(f"{prefix}: source must support Spanish and English")
+    for field, expected in provenance.items():
+        if (source.get("extras") or {}).get(field) != expected:
+            errors.append(f"{prefix}: source has invalid {field}")
+
+    by_url = {normalize_ocl_url(concept.get("url")): concept
+              for _, _, concept in concept_records}
+    by_uuid = defaultdict(list)
+    for _, _, concept in concept_records:
+        by_uuid[concept.get("external_id")].append(concept)
+    concepts = exports[0]["concepts"]
+    new_urls = {normalize_ocl_url(concept.get("url")) for concept in concepts}
+    for concept in concepts:
+        code = concept.get("id")
+        is_set = code == PROCEDURE_ANATOMY_SET_CODE
+        if concept.get("retired") or concept.get("concept_class") != (
+            "ConvSet" if is_set else "Anatomy"
+        ) or concept.get("datatype") != "N/A":
+            errors.append(f"{prefix}: new concept {code} has invalid class/datatype or is retired")
+        if normalize_ocl_url(concept.get("url")) != f"{source_url}concepts/{code}/":
+            errors.append(f"{prefix}: new concept {code} must belong to the catalog source")
+        if not concept.get("external_id") or len(by_uuid[concept.get("external_id")]) != 1:
+            errors.append(f"{prefix}: concept {code} UUID must be bundled exactly once")
+        if is_set and concept.get("external_id") != PROCEDURE_ANATOMY_SET_UUID:
+            errors.append(f"{prefix}: concept set UUID mismatch")
+        spanish = [name for name in concept.get("names", []) if not name.get("retired")
+                   and name.get("locale") == "es" and name.get("locale_preferred")
+                   and str(name.get("name") or "").strip()]
+        if len(spanish) != 1 or normalize_name_type(spanish[0].get("name_type")) != "fully specified":
+            errors.append(f"{prefix}: concept {code} must have one preferred Spanish FSN")
+
+    historical = {}
+    for code, (hl7, uuid, concept_class, datatype) in PROCEDURE_ANATOMY_HISTORICAL.items():
+        url = f"/orgs/SIHSALUS/sources/sihsalus/concepts/{code}/"
+        historical[url] = hl7
+        concept = by_url.get(url) or {}
+        if (concept.get("external_id"), concept.get("concept_class"), concept.get("datatype")) != (
+            uuid, concept_class, datatype
+        ) or concept.get("retired") or len(by_uuid[uuid]) != 1:
+            errors.append(f"{prefix}: historical {code} must preserve identity/class/datatype exactly once")
+    expected_members = (new_urls - {set_url}) | set(historical)
+    memberships = defaultdict(list)
+    equivalents = defaultdict(list)
+    mapping_uuids = set()
+    for mapping in exports[1]["mappings"]:
+        identifier = mapping.get("id")
+        uuid = mapping.get("external_id")
+        if not uuid or uuid in mapping_uuids or uuid in by_uuid:
+            errors.append(f"{prefix}: mapping {identifier} has missing or duplicate UUID")
+        mapping_uuids.add(uuid)
+        if mapping.get("retired") or not (
+            normalize_ocl_url(mapping.get("url")) or ""
+        ).startswith(f"{source_url}mappings/"):
+            errors.append(f"{prefix}: mapping {identifier} must be active and owned by the catalog")
+        origin = normalize_ocl_url(mapping.get("from_concept_url"))
+        target = normalize_ocl_url(mapping.get("to_concept_url"))
+        extras = mapping.get("extras") or {}
+        if mapping.get("map_type") == "CONCEPT-SET":
+            memberships[target].append(mapping)
+            concept = by_url.get(target) or {}
+            if origin != set_url or target not in expected_members:
+                errors.append(f"{prefix}: invalid set membership {identifier}")
+            if extras.get("openmrs_uuid") != concept.get("external_id"):
+                errors.append(f"{prefix}: membership {identifier} UUID does not match target")
+        elif mapping.get("map_type") == "SAME-AS":
+            equivalents[origin].append(mapping)
+            # OCL 2.3.209 bulk authoring omits the optional native version field.
+            # Require provenance version below and reject conflicting native versions.
+            if (mapping.get("to_source_url"), mapping.get("to_source_name")) != (
+                PROCEDURE_ANATOMY_HL7_URL, "v2-0550"
+            ) or mapping.get("to_source_version") not in (None, "4.0.0"):
+                errors.append(f"{prefix}: mapping {identifier} must reference HL7 v2-0550 version 4.0.0")
+            for field, expected in provenance.items():
+                if extras.get(field) != expected:
+                    errors.append(f"{prefix}: mapping {identifier} has invalid {field}")
+            if not extras.get("display_es") or not extras.get("upstream_display_en"):
+                errors.append(f"{prefix}: mapping {identifier} must retain Spanish and original English labels")
+        else:
+            errors.append(f"{prefix}: unexpected mapping type {mapping.get('map_type')!r}")
+    if (set(memberships) != expected_members or len(expected_members) != 133
+            or any(len(rows) != 1 for rows in memberships.values())):
+        errors.append(f"{prefix}: set membership must cover exactly the 133 unique approved sites")
+    if set(equivalents) != expected_members or any(len(rows) != 1 for rows in equivalents.values()):
+        errors.append(f"{prefix}: every member must have exactly one HL7 SAME-AS mapping")
+    hl7_codes = []
+    for url in expected_members:
+        rows = equivalents.get(url, [])
+        if len(rows) != 1:
+            continue
+        code = rows[0].get("to_concept_code")
+        hl7_codes.append(code)
+        concept = by_url.get(url) or {}
+        expected_code = historical.get(url) or concept.get("id")
+        if not code or code != expected_code:
+            errors.append(f"{prefix}: site {url} has incorrect HL7 code")
+        if url not in historical and concept.get("extras") != rows[0].get("extras"):
+            errors.append(f"{prefix}: site {url} provenance must match its HL7 mapping")
+        if not any(name.get("locale") == "es" and name.get("locale_preferred")
+                   and not name.get("retired") and str(name.get("name") or "").strip()
+                   for name in concept.get("names", [])):
+            errors.append(f"{prefix}: member {url} must retain a preferred Spanish name")
+        for membership in memberships.get(url, []):
+            if (membership.get("extras") or {}).get("upstream_code") != code:
+                errors.append(f"{prefix}: membership HL7 code does not match SAME-AS mapping")
+    if len(set(hl7_codes)) != len(hl7_codes):
+        errors.append(f"{prefix}: HL7 codes must identify unique anatomical sites")
+
+    if not FHIR_CONCEPT_SOURCES_PATH.is_file():
+        errors.append(f"{prefix}: required FHIR concept sources CSV is missing")
+        return
+    with FHIR_CONCEPT_SOURCES_PATH.open(newline="", encoding="utf-8") as stream:
+        associations = [row for row in csv.DictReader(stream) if (
+            row.get("Uuid") == PROCEDURE_ANATOMY_FHIR_SOURCE_UUID
+            or row.get("Concept source") in (PROCEDURE_ANATOMY_CONCEPT_SOURCE_UUID, "v2-0550")
+            or row.get("Url") == PROCEDURE_ANATOMY_HL7_URL
+        )]
+    if len(associations) != 1:
+        errors.append(f"{prefix}: must declare exactly one FHIR concept source association")
+        return
+    for field, expected in {
+        "Uuid": PROCEDURE_ANATOMY_FHIR_SOURCE_UUID,
+        "Void/Retire": "", "Concept source": PROCEDURE_ANATOMY_CONCEPT_SOURCE_UUID,
+        "Url": PROCEDURE_ANATOMY_HL7_URL,
+    }.items():
+        if associations[0].get(field) != expected:
+            errors.append(f"{prefix}: FHIR concept source {field} must be {expected!r}")
 
 
 def validate_neighborhood_export_identity(path, export, concept_count, mapping_count, errors):

@@ -15,8 +15,10 @@ import tempfile
 import time
 import uuid
 import xml.etree.ElementTree as ET
+import zipfile
 from collections import Counter
 from pathlib import Path, PurePosixPath
+from urllib.parse import urlencode
 
 from guards import (
     BACKEND, DISTRO_SHA, IMAGE_CONTENT_SHA, IMAGE_CONTENT_VERSION, BASELINE_SHA, DATABASE_IMAGE, DATABASE,
@@ -903,6 +905,98 @@ class Harness:
              neighborhood_members=10, restart_checked=previous is not None)
         return snapshot
 
+    def procedure_anatomy_contract(self):
+        """Read the shipped terminology, without a second catalog in the harness."""
+        exports = []
+        for pattern in ("17_*anatomia-procedimientos_concepts*.zip",
+                        "67_*anatomia-procedimientos_mappings*.zip",
+                        "10_SIHSALUS_sihsalus_concepts*.zip"):
+            paths = list((self.candidate_config / "ocl").glob(pattern))
+            require(len(paths) == 1, "procedure_anatomy_export_missing_or_duplicated")
+            with zipfile.ZipFile(paths[0]) as archive:
+                exports.append(json.loads(archive.read("export.json")))
+        concepts = {concept["url"]: concept for export in exports for concept in export["concepts"]}
+        root = next(concept for concept in exports[0]["concepts"] if concept["id"] == "PROCEDURE-BODY-SITES")
+        mappings = exports[1]["mappings"]
+        members = [mapping for mapping in mappings if mapping["map_type"] == "CONCEPT-SET"]
+        terms = [mapping for mapping in mappings if mapping["map_type"] == "SAME-AS"]
+        expected = {}
+        for member in members:
+            concept = concepts[member["to_concept_url"]]
+            spanish = [name["name"] for name in concept["names"] if name.get("locale") == "es"
+                       and name.get("locale_preferred") and not name.get("retired")]
+            require(len(spanish) == 1, "procedure_anatomy_spanish_name_missing")
+            expected[concept["external_id"]] = (concept["concept_class"], concept["datatype"], spanish[0])
+        expected_terms = {(concepts[term["from_concept_url"]]["external_id"], term["to_concept_code"],
+                           term["external_id"]) for term in terms}
+        require(len(members) == len(expected) == len(expected_terms) == 133,
+                "procedure_anatomy_contract_invalid")
+        system_url = "http://terminology.hl7.org/CodeSystem/v2-0550"
+        with (self.candidate_config / "fhirconceptsources/fhirconceptsources.csv").open(newline="", encoding="utf-8") as stream:
+            associations = [row for row in csv.DictReader(stream) if row["Url"] == system_url]
+        require(len(associations) == 1, "procedure_anatomy_fhir_contract_invalid")
+        association = associations[0]
+        return root["external_id"], expected, expected_terms, (association["Uuid"], association["Concept source"], system_url)
+
+    def check_procedure_anatomy(self, backend, db, phase, previous=None):
+        """Check actual set membership, Spanish names, HL7 mappings and native searches."""
+        root_uuid, expected, expected_terms, (fhir_uuid, source_uuid, system_url) = self.procedure_anatomy_contract()
+        root = self.query(db, "SELECT concept_id,uuid,retired,is_set FROM concept WHERE uuid=" + sql_string(root_uuid))
+        require(len(root) == 1, "procedure_anatomy_set_missing_or_duplicated")
+        fields = root[0].split("\t")
+        require(len(fields) == 4 and re.fullmatch(r"[1-9][0-9]*", fields[0])
+                and fields[1:] == [root_uuid, "0", "1"], "procedure_anatomy_set_invalid")
+        set_id = fields[0]
+        rows = self.query(db, "SELECT s.concept_set_id,s.uuid,c.concept_id,c.uuid,c.retired,cc.name,dt.name,n.name "
+            "FROM concept_set s JOIN concept c ON c.concept_id=s.concept_id "
+            "JOIN concept_class cc ON cc.concept_class_id=c.class_id "
+            "JOIN concept_datatype dt ON dt.concept_datatype_id=c.datatype_id "
+            "LEFT JOIN concept_name n ON n.concept_id=c.concept_id AND n.voided=0 "
+            "AND n.locale='es' AND n.locale_preferred=1 WHERE s.concept_set=" + set_id + " ORDER BY c.uuid")
+        members = [row.split("\t") for row in rows]
+        require(len(members) == 133 and all(len(row) == 8 for row in members)
+                and {row[3] for row in members} == set(expected), "procedure_anatomy_members_invalid")
+        for row in members:
+            require(re.fullmatch(r"[1-9][0-9]*", row[0]) and UUID_PATTERN.fullmatch(row[1])
+                    and re.fullmatch(r"[1-9][0-9]*", row[2]) and row[4] == "0"
+                    and tuple(row[5:]) == expected[row[3]], "procedure_anatomy_member_metadata_invalid")
+        mapping_rows = self.query(db, "SELECT c.uuid,t.code,m.uuid,m.concept_map_id,t.concept_reference_term_id "
+            "FROM concept_reference_map m JOIN concept c ON c.concept_id=m.concept_id "
+            "JOIN concept_reference_term t ON t.concept_reference_term_id=m.concept_reference_term_id "
+            "JOIN concept_reference_source src ON src.concept_source_id=t.concept_source_id "
+            "JOIN concept_map_type mt ON mt.concept_map_type_id=m.concept_map_type_id "
+            "JOIN concept_set s ON s.concept_id=c.concept_id WHERE s.concept_set=" + set_id
+            + " AND src.name='v2-0550' AND mt.name IN ('SAME-AS','SAME_AS') AND t.retired=0 ORDER BY c.uuid,t.code,m.uuid")
+        mapped = [row.split("\t") for row in mapping_rows]
+        require(len(mapped) == 133 and all(len(row) == 5 for row in mapped)
+                and {tuple(row[:3]) for row in mapped} == expected_terms,
+                "procedure_anatomy_hl7_mappings_invalid")
+        fhir_rows = self.query(db, "SELECT f.fhir_concept_source_id,f.uuid,f.retired,src.concept_source_id,"
+            "src.uuid,src.name,src.retired,f.url FROM fhir_concept_source f "
+            "LEFT JOIN concept_reference_source src ON src.concept_source_id=f.concept_source_id WHERE f.uuid="
+            + sql_string(fhir_uuid) + " OR src.uuid=" + sql_string(source_uuid) + " OR f.url=" + sql_string(system_url))
+        require(len(fhir_rows) == 1, "procedure_anatomy_fhir_source_invalid")
+        fhir_fields = fhir_rows[0].split("\t")
+        require(len(fhir_fields) == 8 and re.fullmatch(r"[1-9][0-9]*", fhir_fields[0])
+                and fhir_fields[1:3] == [fhir_uuid, "0"] and re.fullmatch(r"[1-9][0-9]*", fhir_fields[3])
+                and fhir_fields[4:] == [source_uuid, "v2-0550", "0", system_url],
+                "procedure_anatomy_fhir_source_invalid")
+        by_code = {code: identifier for identifier, code, _ in expected_terms}
+        for text, matches in (("abdomen", {by_code["ADB"]}), ("deltoides", {by_code["DELT"]}),
+                              ("esófago", {by_code["ESO"]}), ("ceftriaxona", set())):
+            query = urlencode({"q": text, "memberOf": root_uuid, "v": "custom:(uuid,display)", "limit": 50})
+            status, response = self.request(backend, "GET", "/concept?" + query)
+            require(status == 200 and isinstance(response, dict) and isinstance(response.get("results"), list),
+                    "procedure_anatomy_search_failed")
+            results = response["results"]
+            require(len(results) == len(matches) and {result.get("uuid") for result in results} == matches,
+                    "procedure_anatomy_search_membership_invalid")
+        snapshot = (tuple(root), tuple(rows), tuple(mapping_rows), tuple(fhir_rows))
+        require(previous is None or snapshot == previous, "procedure_anatomy_changed_on_restart")
+        emit("procedure_anatomy", "PASSED", phase=phase, members=133, hl7_mappings=133,
+             fhir_source_associations=1, native_searches=4, restart_checked=previous is not None)
+        return snapshot
+
     def create_fixtures(self, backend):
         for index in range(2):
             code, person = self.request(backend, "POST", "/person", {
@@ -964,6 +1058,7 @@ class Harness:
         self.check_emrapi_roles(db)
         self.check_clinical_drug(backend, db, "fresh")
         self.check_ocl_refresh(db, "fresh")
+        self.check_procedure_anatomy(backend, db, "fresh")
         self.check_clinical_form_updates(db, "fresh")
         self.create_fixtures(backend)
         self.check_admission(db, self.candidate_privileges)
@@ -1075,6 +1170,7 @@ class Harness:
         self.assert_state(db, expected, "upgrade_changed_unapproved_rbac_or_references")
         clinical_drug = self.check_clinical_drug(backend, db, "upgrade")
         ocl_refresh = self.check_ocl_refresh(db, "upgrade")
+        procedure_anatomy = self.check_procedure_anatomy(backend, db, "upgrade")
         clinical_forms = self.check_clinical_form_updates(db, "upgrade", previous=forms_before)
         state, history = self.state(db), self.history(db)
         self.rbac(backend, db)
@@ -1088,6 +1184,7 @@ class Harness:
         require(self.history(db) == history, "second_start_changed_history")
         self.check_clinical_drug(backend, db, "idempotence", previous=clinical_drug)
         self.check_ocl_refresh(db, "idempotence", previous=ocl_refresh)
+        self.check_procedure_anatomy(backend, db, "idempotence", previous=procedure_anatomy)
         require(self.check_clinical_form_updates(db, "idempotence", previous=clinical_forms) == clinical_forms,
                 "second_start_changed_clinical_forms")
         self.docker("stop", "--time", "30", backend, timeout=45)
