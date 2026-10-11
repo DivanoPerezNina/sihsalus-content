@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest import mock
 
@@ -44,6 +45,33 @@ class NeighborhoodCatalogValidationTest(unittest.TestCase):
 
     def tearDown(self):
         self.temporary_directory.cleanup()
+
+    def validate_subscription(self, subscription_url):
+        document = ET.parse(VALIDATOR.GLOBAL_PROPERTIES_PATH)
+        for global_property in document.findall(".//globalProperty"):
+            if global_property.findtext("property") == "openconceptlab.subscriptionUrl":
+                global_property.find("value").text = subscription_url
+        path = self.ocl_directory / "globalproperties.xml"
+        document.write(path, encoding="utf-8")
+        errors = []
+        with mock.patch.object(VALIDATOR, "GLOBAL_PROPERTIES_PATH", path):
+            VALIDATOR.validate_ocl_global_properties(errors)
+        return errors
+
+    def test_accepts_existing_zip_import_namespace(self):
+        self.assertEqual(
+            self.validate_subscription(
+                "https://api.openconceptlab.org/orgs/SIHSALUS/sources/sihsalus/2026-07-16-02"
+            ),
+            [],
+        )
+
+    def test_rejects_premature_institutional_host_transition(self):
+        errors = self.validate_subscription(
+            "https://api.gidis-terminology.duckdns.org/orgs/SIHSALUS/sources/sihsalus/2026-09-09-1"
+        )
+        self.assertEqual(len(errors), 1)
+        self.assertIn("openconceptlab.subscriptionUrl", errors[0])
 
     def source_version(self, concepts, mappings):
         return {

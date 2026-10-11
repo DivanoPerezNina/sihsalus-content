@@ -40,7 +40,7 @@
         <globalProperty>
             <property>openconceptlab.subscriptionUrl</property>
             <value
-            >https://api.gidis-terminology.duckdns.org/orgs/SIHSALUS/sources/sihsalus/2026-09-09-1</value>
+            >https://api.openconceptlab.org/orgs/SIHSALUS/sources/sihsalus/2026-07-16-02</value>
         </globalProperty>
 
         <!-- ENV VARIABLE: OMRS_OCL_TOKEN -->

@@ -43,13 +43,16 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
   Conserva identidad del formulario, conceptos, respuestas, mediciones y datos
   históricos; no calcula una clasificación ni modifica las reglas de laboratorio.
 
-### Suscripción OCL institucional
+### Compatibilidad de la suscripción OCL — candidata `1.25.31`
 
-- Prepara `openconceptlab.subscriptionUrl` para la release curada
-  `SIHSALUS/sihsalus/2026-09-09-1` del servidor institucional. El export
-  autenticado conserva el catálogo clínico del paquete y excluye las identidades
-  retiradas de barrios. La activación en DEV y QLTY requiere una importación
-  sintética aislada y verificación operativa; este cambio no configura credenciales.
+- Restaura `openconceptlab.subscriptionUrl` a la release `2026-07-16-02` de
+  OCL Cloud, el namespace de importación previamente validado. La preparación
+  institucional de #254 cambió el host antes de disponer de una transición
+  compatible: fresh pasa, pero los dos escenarios de upgrade abortan en OCL.
+- Conserva los exports estáticos `2026-09-09-1`, exclusiones, UUIDs y checksums.
+  La release institucional curada sigue documentada, con su activación pendiente
+  de una transición nativa probada en instalación nueva y actualización. No
+  añade SQL, reimportación forzada ni borrado del historial de imports.
 
 ### Relación madre-hijo — candidata `1.25.30`
 

@@ -67,11 +67,30 @@ Para agregar o corregir un barrio:
 5. Ejecutar todos los validadores del content package y una importación desde una base limpia antes de
    desplegar.
 
-El global property `openconceptlab.subscriptionUrl` apunta a la release institucional curada
-`sihsalus/2026-09-09-1`. Su export no contiene los once conceptos ni los diez mappings de barrios
-retirados que el paquete excluye del export de OCL Cloud. El importador remoto no aplica las
-exclusiones del paquete: antes de cambiar la suscripción se debe comprobar el export servido.
-Los barrios se cargan exclusivamente desde sus ZIPs estáticos.
+El global property `openconceptlab.subscriptionUrl` conserva la release
+`2026-07-16-02` de OCL Cloud. Esa versión no contiene los UUID de barrios ni
+elimina conceptos ausentes: es compatible con los dos conceptos activos
+adicionales del export principal `2026-09-09-1`. Los barrios se cargan
+exclusivamente desde sus ZIPs estáticos.
+
+La preparación institucional de #254 cambió el host de esa propiedad; se
+restaura el namespace anterior porque la instalación nueva pasó, pero los
+escenarios nativos de upgrade y alias operativo abortaron en OCL (CI de main
+`64fdf16`, run `37420274108`, y candidato `cc50fab`, run `38102454311`).
+OCL 3.2.0 usa el host de la suscripción para resolver también las URLs relativas
+de los ZIPs locales. Los imports previos conservan sus URLs y los ZIPs sin cambios
+conservan sus checksums: cambiar sólo la propiedad no demuestra una transición
+compatible. Se mantiene `fail_on_error`; no se borran checksums ni registros de
+imports y no se fuerza una recarga. La excepción inferior no está preservada en
+los artefactos sanitizados, por lo que el mecanismo identificado en la fuente
+no se presenta como una excepción observada.
+
+La activación de la release institucional curada `sihsalus/2026-09-09-1` queda
+pendiente de una transición soportada por el componente OCL y probada con
+instalación nueva, upgrade, referencias cruzadas y reinicio. El importador remoto
+no aplica las exclusiones del paquete: también debe comprobarse el export
+servido. Una futura release principal que modifique registros existentes debe
+revisar la suscripción para evitar sobrescribirlos con metadata anterior.
 
 La revisión del 2026-10-05 descargó el export autenticado de la release institucional:
 contiene 4474 conceptos y 5679 mappings, sin las 21 identidades excluidas. Al comparar
